@@ -25,6 +25,27 @@ Based on traditional API Gateways, it intercepts all incoming messages moving th
 
 It supports all the protocols AsyncAPI supports through [bindings](https://github.com/asyncapi/bindings).
 
-This **Event Gateway** is also compatible with the HTTP protocol, natively or trough an external provider like [Krakend.io](http://krakend.io).
+This **Event Gateway** is also compatible with the HTTP protocol, natively or through an external provider like [Krakend.io](http://krakend.io).
 
-AsyncAPI also offers a Marketplace where users can install middlewares for the **Event Gateway** made by the community and also some officially maintained by the AsyncAPI org.
+AsyncAPI also offers a Marketplace where users can install middlewares for the **Event Gateway** made by the community or officially maintained by the AsyncAPI org.
+
+# Goals
+
+## 1. Performance-first while ensuring message delivery
+The **Event Gateway** it's a **stateless** solution that ensures messages are delivered as fast as possible using a minimal resource footprint.
+Delivering messages as a top priority means no data loss should happen.
+
+## 2. Transparent usage.
+No change in the user's code is needed. The service reads and responds pretending to be the final broker. 
+Messages infer the protocol based on the shape of the input network packet.
+
+## 3. Fully configurable.
+The service is entirely configurable and the user can specify the settings for all protocols as well. For example, consumers' and producers' settings.
+
+## 4. API-first
+The service provides an API for uploading AsyncAPI specs, allowing the user to update their message validation, among others, very quickly. 
+It could even be an automated task whenever you update your specs.
+
+## 5. Extensible
+The **Event Gateway** can extend its functionality via middlewares written by the community.
+A Marketplace is also available.
