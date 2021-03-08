@@ -38,7 +38,7 @@ No change in the user's code is needed. The service acts as a proxy between the 
 Messages infer the protocol based on the shape of the input network packet.
 
 ## 3. Fully configurable.
-The service is entirely configurable and the user can specify the settings for all protocols as well. For example, consumers' and producers' settings.
+The service is entirely configurable, and the user can specify the settings for all protocols as well. For example, consumers' and producers' settings.
 
 ## 4. API-first
 The service provides an API for uploading AsyncAPI specs, allowing the user to update their message validation, among others, very quickly. 
