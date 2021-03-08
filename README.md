@@ -27,8 +27,6 @@ It supports all the protocols AsyncAPI supports through [bindings](https://githu
 
 This **Event Gateway** is also compatible with the HTTP protocol, natively or through an external provider like [Krakend.io](http://krakend.io).
 
-AsyncAPI also offers a Marketplace where users can install middlewares for the **Event Gateway** made by the community or officially maintained by the AsyncAPI org.
-
 # Goals
 
 ## 1. Performance-first while ensuring message delivery
@@ -48,4 +46,4 @@ It could even be an automated task whenever you update your specs.
 
 ## 5. Extensible
 The **Event Gateway** can extend its functionality via middlewares written by the community.
-A Marketplace is also available.
+A catalog of middlewares made by the community is also available.
