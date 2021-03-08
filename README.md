@@ -36,7 +36,7 @@ The **Event Gateway** it's a **stateless** solution that ensures messages are de
 Delivering messages as a top priority means no data loss should happen.
 
 ## 2. Transparent usage.
-No change in the user's code is needed. The service reads and responds pretending to be the final broker. 
+No change in the user's code is needed. The service acts as a proxy between the client and the final broker(s). 
 Messages infer the protocol based on the shape of the input network packet.
 
 ## 3. Fully configurable.
