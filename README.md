@@ -35,6 +35,8 @@ It supports all the protocols AsyncAPI supports through [bindings](https://githu
 
 This **Event Gateway** is also compatible with the HTTP protocol, natively or through an external provider like [Krakend.io](http://krakend.io).
 
+![AsyncAPI Event Gateway big picture](https://user-images.githubusercontent.com/1083296/120669755-07323e00-c490-11eb-8844-a6292b516656.jpg)
+
 # Goals
 
 ## 1. Performance-first while ensuring message delivery
