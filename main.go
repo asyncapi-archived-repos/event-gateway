@@ -5,12 +5,11 @@ import (
 	"io"
 	"strings"
 
-	"github.com/kelseyhightower/envconfig"
-
 	"github.com/asyncapi/event-gateway/kafka"
 	server "github.com/grepplabs/kafka-proxy/cmd/kafka-proxy"
 	"github.com/grepplabs/kafka-proxy/proxy"
 	"github.com/grepplabs/kafka-proxy/proxy/protocol"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
