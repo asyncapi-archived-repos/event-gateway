@@ -42,7 +42,7 @@ func main() {
 		Debug:              c.Debug,
 	}
 
-	kafkaProxy, err := kafka.NewProxy(proxyConfig)
+	kafkaProxy, err := kafka.NewProxy(kafkaProxyConfig)
 	if err != nil {
 		logrus.Fatalln(err)
 	}
