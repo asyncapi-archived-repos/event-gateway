@@ -1,4 +1,4 @@
-package kafka
+package protocol
 
 // Kafka request API Keys. See https://kafka.apache.org/protocol#protocol_api_keys.
 const (

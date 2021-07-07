@@ -1,4 +1,4 @@
-package kafka
+package protocol
 
 // The types on this file have been copied from https://github.com/Shopify/sarama and are used for decoding requests.
 // As the decoder/encoder interfaces in Sarama project are not public, there is no way of reusing.
