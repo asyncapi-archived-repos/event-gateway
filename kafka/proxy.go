@@ -66,14 +66,14 @@ func (r *requestKeyHandler) Handle(requestKeyVersion *kafkaprotocol.RequestKeyVe
 		return
 	}
 
-	msg := make([]byte, int64(requestKeyVersion.Length-int32(4+len(bufferRead.Bytes()))))
+	msg := make([]byte, int64(requestKeyVersion.Length-int32(4+bufferRead.Len())))
 	if _, err = io.ReadFull(io.TeeReader(src, bufferRead), msg); err != nil {
 		return
 	}
-
 	var req protocol.ProduceRequest
 	if err = protocol.VersionedDecode(msg, &req, requestKeyVersion.ApiVersion); err != nil {
 		logrus.Errorln(errors.Wrap(err, "error decoding ProduceRequest"))
+		// TODO notify error to a given notifier
 
 		// Do not return an error but log it.
 		return shouldReply, nil
@@ -84,7 +84,7 @@ func (r *requestKeyHandler) Handle(requestKeyVersion *kafkaprotocol.RequestKeyVe
 			if s.RecordBatch != nil {
 				for _, r := range s.RecordBatch.Records {
 					if !isValid(r.Value) {
-						logrus.Errorln("Message is not valid")
+						logrus.Debugln("Message is not valid")
 					} else {
 						logrus.Debugln("Message is valid")
 					}
@@ -93,7 +93,7 @@ func (r *requestKeyHandler) Handle(requestKeyVersion *kafkaprotocol.RequestKeyVe
 			if s.MsgSet != nil {
 				for _, mb := range s.MsgSet.Messages {
 					if !isValid(mb.Msg.Value) {
-						logrus.Errorln("Message is not valid")
+						logrus.Debugln("Message is not valid")
 					} else {
 						logrus.Debugln("Message is valid")
 					}
