@@ -35,7 +35,7 @@ func main() {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	proxyConfig := kafka.ProxyConfig{
+	kafkaProxyConfig := kafka.ProxyConfig{
 		BrokersMapping:     c.KafkaProxyBrokersMapping.values,
 		DialAddressMapping: c.KafkaProxyBrokersDialMapping.values,
 		ExtraConfig:        c.KafkaProxyExtraFlags.values,
