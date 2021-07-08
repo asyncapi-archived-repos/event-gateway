@@ -15,14 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Note: Taking V8 as random version.
-// correlation_id: 0, 0, 0, 6
-// client_id_size: 0, 16
-// client_id: 99, 111, 110, 115, 111, 108, 101, 45, 112, 114, 111, 100, 117, 99, 101, 114
-// transactional_id_size: 255, 255
-// acks: 0, 1
-var produceRequestV8Headers = []byte{0, 0, 0, 6, 0, 16, 99, 111, 110, 115, 111, 108, 101, 45, 112, 114, 111, 100, 117, 99, 101, 114, 255, 255, 0, 1}
-
 func TestNewKafka(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -112,10 +104,17 @@ func TestRequestKeyHandler_Handle(t *testing.T) {
 
 //nolint:funlen
 func generateProduceRequestV8(payload string) []byte {
+	// Note: Taking V8 as random version.
 	buf := bytes.NewBuffer(nil)
 
 	// Request headers
-	buf.Write(produceRequestV8Headers)
+	//
+	// correlation_id: 0, 0, 0, 6
+	// client_id_size: 0, 16
+	// client_id: 99, 111, 110, 115, 111, 108, 101, 45, 112, 114, 111, 100, 117, 99, 101, 114
+	// transactional_id_size: 255, 255
+	// acks: 0, 1
+	buf.Write([]byte{0, 0, 0, 6, 0, 16, 99, 111, 110, 115, 111, 108, 101, 45, 112, 114, 111, 100, 117, 99, 101, 114, 255, 255, 0, 1})
 
 	// timeout: 0, 0, 5, 200
 	// topics count: 0, 0, 0, 1
