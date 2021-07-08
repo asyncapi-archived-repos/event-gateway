@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"bytes"
+	"encoding/binary"
 	"testing"
 
 	"github.com/asyncapi/event-gateway/proxy"
@@ -63,12 +64,12 @@ func TestRequestKeyHandler_Handle(t *testing.T) {
 	}{
 		{
 			name:        "Valid message",
-			request:     []byte{0, 0, 5, 220, 0, 0, 0, 1, 0, 4, 100, 101, 109, 111, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 81, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 69, 255, 255, 255, 255, 2, 42, 190, 231, 201, 0, 0, 0, 0, 0, 0, 0, 0, 1, 122, 129, 58, 51, 194, 0, 0, 1, 122, 129, 58, 51, 194, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 1, 38, 0, 0, 0, 1, 26, 118, 97, 108, 105, 100, 32, 109, 101, 115, 115, 97, 103, 101, 0}, // payload: 'valid message'
+			request:     generateProduceRequestV8("valid message"),
 			shouldReply: true,
 		},
 		{
 			name:        "Invalid message",
-			request:     []byte{0, 0, 5, 220, 0, 0, 0, 1, 0, 4, 100, 101, 109, 111, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 83, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 71, 255, 255, 255, 255, 2, 122, 198, 121, 91, 0, 0, 0, 0, 0, 0, 0, 0, 1, 122, 129, 58, 129, 47, 0, 0, 1, 122, 129, 58, 129, 47, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 1, 42, 0, 0, 0, 1, 30, 105, 110, 118, 97, 108, 105, 100, 32, 109, 101, 115, 115, 97, 103, 101, 0}, // payload: 'invalid message'
+			request:     generateProduceRequestV8("invalid message"),
 			shouldReply: true,
 		},
 		{
@@ -107,4 +108,17 @@ func TestRequestKeyHandler_Handle(t *testing.T) {
 			}
 		})
 	}
+}
+
+func generateProduceRequestV8(payload string) []byte {
+	raw := []byte{0, 0, 5, 220, 0, 0, 0, 1, 0, 4, 100, 101, 109, 111, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 81, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 69, 255, 255, 255, 255, 2, 42, 190, 231, 201, 0, 0, 0, 0, 0, 0, 0, 0, 1, 122, 129, 58, 51, 194, 0, 0, 1, 122, 129, 58, 51, 194, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 1, 38, 0, 0, 0, 1}
+
+	// Based on https://kafka.apache.org/documentation/#record
+	messageLen := make([]byte, 1)
+	binary.PutVarint(messageLen, int64(len(payload)))
+
+	bytesPayload := append(messageLen, []byte(payload)...)
+	raw = append(raw, bytesPayload...)
+
+	return append(raw, 0) // No headers
 }
