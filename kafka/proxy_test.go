@@ -3,6 +3,7 @@ package kafka
 import (
 	"bytes"
 	"encoding/binary"
+	"hash/crc32"
 	"testing"
 
 	"github.com/asyncapi/event-gateway/proxy"
@@ -83,7 +84,6 @@ func TestRequestKeyHandler_Handle(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			log := logrustest.NewGlobal()
-			test.request = append(produceRequestV8Headers, test.request...) // This appends the Produce Request headers which we don't care for this test.
 			kv := &kafkaprotocol.RequestKeyVersion{
 				ApiVersion: 8,                            // All test data was grabbed from a Produce Request version 8.
 				ApiKey:     test.apiKey,                  // default is 0, which is a Produce Request
@@ -110,15 +110,86 @@ func TestRequestKeyHandler_Handle(t *testing.T) {
 	}
 }
 
+//nolint:funlen
 func generateProduceRequestV8(payload string) []byte {
-	raw := []byte{0, 0, 5, 220, 0, 0, 0, 1, 0, 4, 100, 101, 109, 111, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 81, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 69, 255, 255, 255, 255, 2, 42, 190, 231, 201, 0, 0, 0, 0, 0, 0, 0, 0, 1, 122, 129, 58, 51, 194, 0, 0, 1, 122, 129, 58, 51, 194, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 1, 38, 0, 0, 0, 1}
+	buf := bytes.NewBuffer(nil)
 
-	// Based on https://kafka.apache.org/documentation/#record
-	messageLen := make([]byte, 1)
-	binary.PutVarint(messageLen, int64(len(payload)))
+	// Request headers
+	buf.Write(produceRequestV8Headers)
 
-	bytesPayload := append(messageLen, []byte(payload)...)
-	raw = append(raw, bytesPayload...)
+	// timeout: 0, 0, 5, 200
+	// topics count: 0, 0, 0, 1
+	// topic name string len: 0, 4
+	// topic name: 100, 101, 109, 111
+	// partition count: 0, 0, 0, 1
+	// partition: 0, 0, 0, 0
+	buf.Write([]byte{0, 0, 5, 220, 0, 0, 0, 1, 0, 4, 100, 101, 109, 111, 0, 0, 0, 1, 0, 0, 0, 0})
 
-	return append(raw, 0) // No headers
+	// request size <int32>
+	requestSize := make([]byte, 4)
+	requestSizeInt := uint32(68 + len(payload))
+	binary.BigEndian.PutUint32(requestSize, requestSizeInt)
+	buf.Write(requestSize)
+
+	// base offset: 0, 0, 0, 0, 0, 0, 0, 0
+	baseOffset := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	buf.Write(baseOffset)
+
+	// batch len <int32>
+	batchLen := make([]byte, 4)
+	binary.BigEndian.Uint32(requestSize)
+	binary.BigEndian.PutUint32(batchLen, requestSizeInt+uint32(len(baseOffset)+len(payload)))
+	buf.Write(batchLen)
+
+	//   partition leader epoch: 255, 255, 255, 255
+	//   version: 2
+	leaderEpochAndVersion := []byte{255, 255, 255, 255, 2}
+	buf.Write(leaderEpochAndVersion)
+
+	// CRC32 <int32>
+	crc32ReservationStart := buf.Len()
+	buf.Write([]byte{0, 0, 0, 0}) // reserving int32 for crc calculation once the rest of the request is generated.
+
+	//   attributes: 0, 0
+	//   last offset delta: 0, 0, 0, 0
+	//   first timestamp: 0, 0, 1, 122, 129, 58, 129, 47
+	//   max timestamp: 0, 0, 1, 122, 129, 58, 129, 47
+	//   producer id: 255, 255, 255, 255, 255, 255, 255, 255
+	//   producer epoc: 255, 255
+	//   base sequence: 255, 255, 255, 255
+	//   records https://kafka.apache.org/documentation/#record
+	//     amount: 0, 0, 0, 1
+	buf.Write([]byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 122, 129, 58, 129, 47, 0, 0, 1, 122, 129, 58, 129, 47, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 1})
+
+	// record len <int8>
+	recordLenInt := 27 + len(payload)
+	buf.WriteByte(byte(recordLenInt))
+
+	//       attributes: 0
+	//       timestamp delta: 0
+	//       offset delta: 0
+	//       key: 1
+	buf.Write([]byte{0, 0, 0, 1})
+
+	// message payload len
+	payloadLen := make([]byte, 1)
+	binary.PutVarint(payloadLen, int64(len(payload)))
+	buf.Write(payloadLen)
+
+	// Payload
+	buf.Write([]byte(payload))
+
+	// Headers: 0
+	buf.WriteByte(0)
+
+	table := crc32.MakeTable(crc32.Castagnoli)
+	crc32Calculator := crc32.New(table)
+	crc32Calculator.Write(buf.Bytes()[crc32ReservationStart+4:])
+
+	hash := crc32Calculator.Sum(make([]byte, 0))
+	for i := 0; i < len(hash); i++ {
+		buf.Bytes()[crc32ReservationStart+i] = hash[i]
+	}
+
+	return buf.Bytes()
 }
