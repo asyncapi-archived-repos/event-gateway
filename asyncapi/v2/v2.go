@@ -1,17 +1,23 @@
 package v2
 
+import "github.com/asyncapi/event-gateway/asyncapi"
+
 type Document struct {
 	Extendable
 	ServersField map[string]Server `mapstructure:"servers"`
 }
 
-func (d Document) Servers() []Server {
-	var servers []Server
+func (d Document) Servers() []asyncapi.Server {
+	var servers []asyncapi.Server
 	for _, s := range d.ServersField {
 		servers = append(servers, s)
 	}
 
 	return servers
+}
+
+func (d Document) HasServers() bool {
+	return len(d.ServersField) > 0
 }
 
 type Server struct {
@@ -21,6 +27,15 @@ type Server struct {
 	ProtocolField    string                    `mapstructure:"protocol"`
 	URLField         string                    `mapstructure:"url"`
 	VariablesField   map[string]ServerVariable `mapstructure:"variables"`
+}
+
+func (s Server) Variables() []asyncapi.ServerVariable {
+	var vars []asyncapi.ServerVariable
+	for _, v := range s.VariablesField {
+		vars = append(vars, v)
+	}
+
+	return vars
 }
 
 func (s Server) IDField() string {
@@ -61,15 +76,6 @@ func (s Server) Protocol() string {
 
 func (s Server) HasProtocol() bool {
 	return s.ProtocolField != ""
-}
-
-func (s Server) Variables() []ServerVariable {
-	var vars []ServerVariable
-	for _, v := range s.VariablesField {
-		vars = append(vars, v)
-	}
-
-	return vars
 }
 
 type ServerVariable struct {

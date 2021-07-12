@@ -5,6 +5,7 @@ package asyncapi
 type Document interface {
 	Extendable
 	Servers() []Server
+	HasServers() bool
 }
 
 // Server is an object representing a message broker, a server or any other kind of computer program capable of
