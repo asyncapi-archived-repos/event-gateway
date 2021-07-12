@@ -78,16 +78,16 @@ func (s ServerVariable) Name() string {
 	return s.NameField
 }
 
-func (s ServerVariable) HasName() string {
-	panic("implement me")
+func (s ServerVariable) HasName() bool {
+	return s.NameField != ""
 }
 
 func (s ServerVariable) DefaultValue() string {
-	panic("implement me")
+	return s.Default
 }
 
 func (s ServerVariable) AllowedValues() []string {
-	panic("implement me")
+	return s.Enum
 }
 
 type Extendable struct {
