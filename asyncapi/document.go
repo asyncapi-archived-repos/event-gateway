@@ -4,7 +4,7 @@ package asyncapi
 // It's API implements https://github.com/asyncapi/parser-api/blob/master/docs/v1.md.
 type Document interface {
 	Extendable
-	Servers()
+	Servers() []Server
 }
 
 // Server is an object representing a message broker, a server or any other kind of computer program capable of
