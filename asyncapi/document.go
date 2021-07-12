@@ -13,9 +13,12 @@ type Server interface {
 	Extendable
 	Name() string
 	HasName() bool
+	Description() string
+	HasDescription() bool
 	URL() string
 	HasURL() bool
 	Protocol() string
+	HasProtocol() bool
 	Variables() []ServerVariable
 }
 

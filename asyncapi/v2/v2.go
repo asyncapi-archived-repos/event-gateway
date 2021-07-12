@@ -16,10 +16,11 @@ func (d Document) Servers() []Server {
 
 type Server struct {
 	Extendable
-	NameField      string                    `mapstructure:"name"`
-	ProtocolField  string                    `mapstructure:"protocol"`
-	URLField       string                    `mapstructure:"url"`
-	VariablesField map[string]ServerVariable `mapstructure:"variables"`
+	NameField        string                    `mapstructure:"name"`
+	DescriptionField string                    `mapstructure:"description"`
+	ProtocolField    string                    `mapstructure:"protocol"`
+	URLField         string                    `mapstructure:"url"`
+	VariablesField   map[string]ServerVariable `mapstructure:"variables"`
 }
 
 func (s Server) IDField() string {
@@ -38,6 +39,14 @@ func (s Server) HasName() bool {
 	return s.NameField != ""
 }
 
+func (s Server) Description() string {
+	return s.DescriptionField
+}
+
+func (s Server) HasDescription() bool {
+	return s.DescriptionField != ""
+}
+
 func (s Server) URL() string {
 	return s.URLField
 }
@@ -48,6 +57,10 @@ func (s Server) HasURL() bool {
 
 func (s Server) Protocol() string {
 	return s.ProtocolField
+}
+
+func (s Server) HasProtocol() bool {
+	return s.ProtocolField != ""
 }
 
 func (s Server) Variables() []ServerVariable {

@@ -3,6 +3,8 @@ package v2
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,8 +22,24 @@ func TestDecode(t *testing.T) {
 			doc:  []byte("testdata/example-kafka.yaml"),
 			dst:  &Document{},
 			check: func(t *testing.T, dst interface{}) {
-				assert.IsType(t, (*Document)(nil), dst)
-				assert.Len(t, dst.(*Document).Servers(), 1)
+				require.IsType(t, (*Document)(nil), dst)
+				doc := dst.(*Document)
+				require.Len(t, doc.Servers(), 1)
+				s := doc.Servers()[0]
+
+				assert.True(t, s.HasName())
+				assert.Equal(t, "test", s.Name())
+				assert.True(t, s.HasDescription())
+				assert.Equal(t, "Test broker", s.Description())
+				assert.True(t, s.HasProtocol())
+				assert.Equal(t, "kafka-secure", s.Protocol())
+				assert.True(t, s.HasURL())
+				assert.Equal(t, "localhost:9092", s.URL())
+				assert.True(t, s.HasExtension("x-eventgateway-listener"))
+				assert.Equal(t, "proxy:28002", s.Extension("x-eventgateway-listener"))
+				assert.True(t, s.HasExtension("x-eventgateway-dial-mapping"))
+				assert.Equal(t, "broker:9092", s.Extension("x-eventgateway-dial-mapping"))
+				assert.Empty(t, s.Variables())
 			},
 		},
 		{
@@ -65,11 +83,21 @@ channels:
               description: Date and time when the message was sent.`),
 			dst: &Document{},
 			check: func(t *testing.T, dst interface{}) {
-				assert.IsType(t, (*Document)(nil), dst)
+				require.IsType(t, (*Document)(nil), dst)
 				doc := dst.(*Document)
+				require.Len(t, doc.Servers(), 1)
+				s := doc.Servers()[0]
 
-				assert.Len(t, doc.Servers(), 1)
-				assert.Equal(t, "mosquitto", doc.Servers()[0].Name())
+				assert.True(t, s.HasName())
+				assert.Equal(t, "mosquitto", s.Name())
+				assert.False(t, s.HasDescription())
+				assert.True(t, s.HasProtocol())
+				assert.Equal(t, "mqtt", s.Protocol())
+				assert.True(t, s.HasURL())
+				assert.Equal(t, "mqtt://test.mosquitto.org", s.URL())
+				assert.False(t, s.HasExtension("x-eventgateway-listener"))
+				assert.False(t, s.HasExtension("x-eventgateway-dial-mapping"))
+				assert.Empty(t, s.Variables())
 			},
 		},
 	}
