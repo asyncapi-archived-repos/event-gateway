@@ -1,6 +1,7 @@
 package asyncapi
 
-// Decoder decodes an AsyncAPI JSON Schema document.
+// Decoder decodes an AsyncAPI document (several formats can be supported).
+// See https://github.com/asyncapi/parser-go#overview for the minimum supported schemas.
 type Decoder interface {
 	Decode([]byte, interface{}) error
 }
