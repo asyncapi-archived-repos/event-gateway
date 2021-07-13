@@ -3,7 +3,10 @@ package kafka
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"net"
+	"regexp"
 	"strings"
 
 	"github.com/asyncapi/event-gateway/kafka/protocol"
@@ -23,8 +26,42 @@ type ProxyConfig struct {
 	Debug              bool
 }
 
+func (c *ProxyConfig) Validate() error {
+	if len(c.BrokersMapping) == 0 {
+		return errors.New("BrokersMapping is mandatory")
+	}
+
+	invalidFormatMsg := "BrokersMapping should be in form 'remotehost:remoteport,localhost:localport"
+	for _, m := range c.BrokersMapping {
+		v := strings.Split(m, ",")
+		if len(v) != 2 {
+			return errors.New(invalidFormatMsg)
+		}
+
+		remoteHost, remotePort, err := net.SplitHostPort(v[0])
+		if err != nil {
+			return errors.Wrap(err, invalidFormatMsg)
+		}
+
+		localHost, localPort, err := net.SplitHostPort(v[1])
+		if err != nil {
+			return errors.Wrap(err, invalidFormatMsg)
+		}
+
+		if remoteHost == localHost && remotePort == localPort || (isLocalHost(remoteHost) && isLocalHost(localHost) && remotePort == localPort) {
+			return fmt.Errorf("broker and proxy can't listen to the same port on the same host. Broker is already listening at %s. Please configure a different listener port", v[0])
+		}
+	}
+
+	return nil
+}
+
 // NewProxy creates a new Kafka Proxy based on a given configuration.
 func NewProxy(c ProxyConfig) (proxy.Proxy, error) {
+	if err := c.Validate(); err != nil {
+		return nil, err
+	}
+
 	// Yeah, not a good practice at all but I guess it's fine for now.
 	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(protocol.RequestAPIKeyProduce, &requestKeyHandler{})
 
@@ -107,4 +144,14 @@ func (r *requestKeyHandler) Handle(requestKeyVersion *kafkaprotocol.RequestKeyVe
 
 func isValid(msg []byte) bool {
 	return string(msg) != "invalid message"
+}
+
+var localHostIpv4 = regexp.MustCompile(`127\.0\.0\.\d+`)
+
+func isLocalHost(host string) bool {
+	return host == "" ||
+		host == "::1" ||
+		host == "0:0:0:0:0:0:0:1" ||
+		localHostIpv4.MatchString(host) ||
+		host == "localhost"
 }

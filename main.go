@@ -15,10 +15,6 @@ func main() {
 		logrus.WithError(err).Fatal()
 	}
 
-	if err := c.Validate(); err != nil {
-		logrus.WithError(err).Fatal()
-	}
-
 	if c.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}

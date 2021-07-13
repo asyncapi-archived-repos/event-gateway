@@ -7,6 +7,11 @@ type Document struct {
 	ServersField map[string]Server `mapstructure:"servers"`
 }
 
+func (d Document) Server(name string) (asyncapi.Server, bool) {
+	s, ok := d.ServersField[name]
+	return s, ok
+}
+
 func (d Document) Servers() []asyncapi.Server {
 	var servers []asyncapi.Server
 	for _, s := range d.ServersField {
@@ -63,6 +68,7 @@ func (s Server) HasDescription() bool {
 }
 
 func (s Server) URL() string {
+	// TODO variable substitution if applies
 	return s.URLField
 }
 
