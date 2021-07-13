@@ -3,6 +3,7 @@ package v2
 import (
 	"testing"
 
+	"github.com/asyncapi/event-gateway/asyncapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,7 +13,9 @@ func TestDecodeFromFile(t *testing.T) {
 	require.NoError(t, Decode([]byte("testdata/example-kafka.yaml"), doc))
 
 	require.Len(t, doc.Servers(), 1)
-	s := doc.Servers()[0]
+	s, ok := doc.Server("test")
+	assert.True(t, ok)
+	assert.Equal(t, s, doc.Servers()[0])
 
 	assert.True(t, s.HasName())
 	assert.Equal(t, "test", s.Name())
@@ -22,10 +25,10 @@ func TestDecodeFromFile(t *testing.T) {
 	assert.Equal(t, "kafka-secure", s.Protocol())
 	assert.True(t, s.HasURL())
 	assert.Equal(t, "localhost:9092", s.URL())
-	assert.True(t, s.HasExtension("x-eventgateway-listener"))
-	assert.Equal(t, "proxy:28002", s.Extension("x-eventgateway-listener"))
-	assert.True(t, s.HasExtension("x-eventgateway-dial-mapping"))
-	assert.Equal(t, "broker:9092", s.Extension("x-eventgateway-dial-mapping"))
+	assert.True(t, s.HasExtension(asyncapi.ExtensionEventGatewayListener))
+	assert.Equal(t, "proxy:28002", s.Extension(asyncapi.ExtensionEventGatewayListener))
+	assert.True(t, s.HasExtension(asyncapi.ExtensionEventGatewayDialMapping))
+	assert.Equal(t, "broker:9092", s.Extension(asyncapi.ExtensionEventGatewayDialMapping))
 	assert.Empty(t, s.Variables())
 }
 
@@ -73,7 +76,9 @@ channels:
 	require.NoError(t, Decode(raw, doc))
 
 	require.Len(t, doc.Servers(), 1)
-	s := doc.Servers()[0]
+	s, ok := doc.Server("mosquitto")
+	assert.True(t, ok)
+	assert.Equal(t, s, doc.Servers()[0])
 
 	assert.True(t, s.HasName())
 	assert.Equal(t, "mosquitto", s.Name())
@@ -82,7 +87,7 @@ channels:
 	assert.Equal(t, "mqtt", s.Protocol())
 	assert.True(t, s.HasURL())
 	assert.Equal(t, "mqtt://test.mosquitto.org", s.URL())
-	assert.False(t, s.HasExtension("x-eventgateway-listener"))
-	assert.False(t, s.HasExtension("x-eventgateway-dial-mapping"))
+	assert.False(t, s.HasExtension(asyncapi.ExtensionEventGatewayListener))
+	assert.False(t, s.HasExtension(asyncapi.ExtensionEventGatewayDialMapping))
 	assert.Empty(t, s.Variables())
 }

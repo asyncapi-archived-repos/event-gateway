@@ -18,19 +18,23 @@ import (
 func TestNewKafka(t *testing.T) {
 	tests := []struct {
 		name        string
-		c           ProxyConfig
+		c           *ProxyConfig
 		expectedErr error
 	}{
 		{
 			name: "Proxy is created when config is valid",
-			c: ProxyConfig{
+			c: &ProxyConfig{
 				BrokersMapping: []string{"localhost:9092, localhost:28002"},
 			},
 		},
 		{
 			name:        "Proxy creation errors when config is invalid",
-			c:           ProxyConfig{},
-			expectedErr: errors.New("Brokers mapping is required"),
+			c:           &ProxyConfig{},
+			expectedErr: errors.New("BrokersMapping is mandatory"),
+		},
+		{
+			name:        "Proxy creation errors when config is missing",
+			expectedErr: errors.New("config should be provided"),
 		},
 	}
 	for _, test := range tests {

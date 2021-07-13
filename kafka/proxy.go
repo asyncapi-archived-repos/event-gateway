@@ -15,16 +15,16 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ProxyConfig holds the configuration for the Kafka Proxy.
-type ProxyConfig struct {
-	BrokersMapping     []string
-	DialAddressMapping []string
-	ExtraConfig        []string
-	Debug              bool
-}
-
 // NewProxy creates a new Kafka Proxy based on a given configuration.
-func NewProxy(c ProxyConfig) (proxy.Proxy, error) {
+func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
+	if c == nil {
+		return nil, errors.New("config should be provided")
+	}
+
+	if err := c.Validate(); err != nil {
+		return nil, err
+	}
+
 	// Yeah, not a good practice at all but I guess it's fine for now.
 	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(protocol.RequestAPIKeyProduce, &requestKeyHandler{})
 

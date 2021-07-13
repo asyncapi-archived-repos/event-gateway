@@ -4,6 +4,7 @@ package asyncapi
 // It's API implements https://github.com/asyncapi/parser-api/blob/master/docs/v1.md.
 type Document interface {
 	Extendable
+	Server(name string) (Server, bool)
 	Servers() []Server
 	HasServers() bool
 }
