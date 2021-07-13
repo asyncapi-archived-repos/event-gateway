@@ -16,7 +16,11 @@ import (
 )
 
 // NewProxy creates a new Kafka Proxy based on a given configuration.
-func NewProxy(c ProxyConfig) (proxy.Proxy, error) {
+func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
+	if c == nil {
+		return nil, errors.New("config should be provided")
+	}
+
 	if err := c.Validate(); err != nil {
 		return nil, err
 	}

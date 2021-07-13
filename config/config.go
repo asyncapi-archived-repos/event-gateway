@@ -14,7 +14,7 @@ type App struct {
 }
 
 // ProxyConfig creates a config struct for the Kafka Proxy.
-func (c App) ProxyConfig() (kafka.ProxyConfig, error) {
+func (c App) ProxyConfig() (*kafka.ProxyConfig, error) {
 	return c.KafkaProxy.ProxyConfig(c.AsyncAPIDoc, c.Debug)
 }
 

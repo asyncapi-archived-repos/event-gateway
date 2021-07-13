@@ -13,14 +13,14 @@ import (
 func TestKafkaProxy_ProxyConfig(t *testing.T) {
 	tests := []struct {
 		name                string
-		config              KafkaProxy
+		config              *KafkaProxy
 		doc                 []byte
 		expectedProxyConfig *kafka.ProxyConfig
 		expectedErr         error
 	}{
 		{
 			name: "Valid config. Only one broker from doc",
-			config: KafkaProxy{
+			config: &KafkaProxy{
 				BrokerFromServer: "test",
 			},
 			expectedProxyConfig: &kafka.ProxyConfig{
@@ -30,7 +30,7 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 		},
 		{
 			name: "Valid config. Only broker mapping",
-			config: KafkaProxy{
+			config: &KafkaProxy{
 				BrokersMapping: pipeSeparatedValues{Values: []string{"broker.mybrokers.org:9092,:9092"}},
 			},
 			expectedProxyConfig: &kafka.ProxyConfig{
@@ -39,7 +39,7 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 		},
 		{
 			name: "Valid config. Broker mapping + Dial mapping",
-			config: KafkaProxy{
+			config: &KafkaProxy{
 				BrokersMapping:     pipeSeparatedValues{Values: []string{"broker.mybrokers.org:9092,:9092"}},
 				BrokersDialMapping: pipeSeparatedValues{Values: []string{"broker.mybrokers.org:9092,192.168.1.10:9092"}},
 			},
@@ -50,18 +50,19 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 		},
 		{
 			name:        "Invalid config. No broker mapping",
+			config:      &KafkaProxy{},
 			expectedErr: errors.New("either AsyncAPIDoc or KafkaProxyBrokersMapping config should be provided"),
 		},
 		{
 			name: "Invalid config. Both broker and proxy can't listen to the same port within same host",
-			config: KafkaProxy{
+			config: &KafkaProxy{
 				BrokersMapping: pipeSeparatedValues{Values: []string{"localhost:9092,:9092"}},
 			},
 			expectedErr: errors.New("broker and proxy can't listen to the same port on the same host. Broker is already listening at localhost:9092. Please configure a different listener port"),
 		},
 		{
 			name: "Invalid config. Both broker and proxy are the same",
-			config: KafkaProxy{
+			config: &KafkaProxy{
 				BrokersMapping: pipeSeparatedValues{Values: []string{"broker.mybrokers.org:9092,broker.mybrokers.org:9092"}},
 			},
 			expectedErr: errors.New("broker and proxy can't listen to the same port on the same host. Broker is already listening at broker.mybrokers.org:9092. Please configure a different listener port"),
@@ -77,7 +78,7 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 			}
 
 			if test.expectedProxyConfig != nil {
-				assert.EqualValues(t, *test.expectedProxyConfig, proxyConfig)
+				assert.EqualValues(t, test.expectedProxyConfig, proxyConfig)
 			}
 		})
 	}

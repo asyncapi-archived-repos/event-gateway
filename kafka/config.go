@@ -19,6 +19,45 @@ type ProxyConfig struct {
 	Debug              bool
 }
 
+type Option func(*ProxyConfig) error
+
+// WithDebug enables debug.
+func WithDebug() Option {
+	return func(c *ProxyConfig) error {
+		c.Debug = true
+		return nil
+	}
+}
+
+// WithDialAddressMapping configures Dial Address Mapping.
+func WithDialAddressMapping(mapping []string) Option {
+	return func(c *ProxyConfig) error {
+		c.DialAddressMapping = mapping
+		return nil
+	}
+}
+
+// WithExtra configures extra parameters.
+func WithExtra(extra []string) Option {
+	return func(c *ProxyConfig) error {
+		c.ExtraConfig = extra
+		return nil
+	}
+}
+
+// NewProxyConfig creates a new ProxyConfig.
+func NewProxyConfig(brokersMapping []string, opts ...Option) (*ProxyConfig, error) {
+	c := &ProxyConfig{BrokersMapping: brokersMapping}
+	for _, opt := range opts {
+		if err := opt(c); err != nil {
+			return nil, err
+		}
+	}
+
+	return c, c.Validate()
+}
+
+// Validate validates ProxyConfig.
 func (c *ProxyConfig) Validate() error {
 	if len(c.BrokersMapping) == 0 {
 		return errors.New("BrokersMapping is mandatory")
