@@ -493,10 +493,6 @@ func (s *Schema) Description() string {
 	return s.DescriptionField
 }
 
-func (s *Schema) HasDescription() bool {
-	return s.DescriptionField != ""
-}
-
 func (s *Schema) Discriminator() string {
 	return s.DiscriminatorField
 }

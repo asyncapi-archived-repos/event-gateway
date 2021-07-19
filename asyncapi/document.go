@@ -103,7 +103,6 @@ type Schema interface {
 	Dependencies() map[string]Schema // TODO Map[string, Schema|string[]]
 	Deprecated() bool
 	Description() string
-	HasDescription() bool
 	Discriminator() string
 	Else() Schema
 	Enum() []interface{}
