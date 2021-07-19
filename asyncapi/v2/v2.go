@@ -170,11 +170,11 @@ func (d Document) filterOperations(filter func(operation asyncapi.Operation) boo
 
 type Channel struct {
 	Extendable
-	PathField        string                      `mapstructure:"path"`
-	DescriptionField string                      `mapstructure:"description"`
-	ParametersField  map[string]ChannelParameter `mapstructure:"parameters"`
-	Subscribe        *SubscribeOperation         `mapstructure:"subscribe"`
-	Publish          *PublishOperation           `mapstructure:"publish"`
+	Describable     `mapstructure:",squash"`
+	PathField       string                      `mapstructure:"path"`
+	ParametersField map[string]ChannelParameter `mapstructure:"parameters"`
+	Subscribe       *SubscribeOperation         `mapstructure:"subscribe"`
+	Publish         *PublishOperation           `mapstructure:"publish"`
 }
 
 func (c Channel) IDField() string {
@@ -187,14 +187,6 @@ func (c Channel) ID() string {
 
 func (c Channel) Path() string {
 	return c.PathField
-}
-
-func (c Channel) Description() string {
-	return c.DescriptionField
-}
-
-func (c Channel) HasDescription() bool {
-	return c.DescriptionField != ""
 }
 
 func (c Channel) Parameters() []asyncapi.ChannelParameter {
@@ -233,9 +225,9 @@ func (c Channel) Messages() []asyncapi.Message {
 
 type ChannelParameter struct {
 	Extendable
-	NameField        string  `mapstructure:"name"`
-	DescriptionField string  `mapstructure:"description"`
-	SchemaField      *Schema `mapstructure:"schema"`
+	Describable
+	NameField   string  `mapstructure:"name"`
+	SchemaField *Schema `mapstructure:"schema"`
 }
 
 func (c ChannelParameter) IDField() string {
@@ -248,10 +240,6 @@ func (c ChannelParameter) ID() string {
 
 func (c ChannelParameter) Name() string {
 	return c.NameField
-}
-
-func (c ChannelParameter) Description() string {
-	return c.DescriptionField
 }
 
 func (c ChannelParameter) Schema() asyncapi.Schema {
@@ -280,8 +268,8 @@ func (o PublishOperation) MapStructureDefaults() map[string]interface{} {
 
 type Operation struct {
 	Extendable
+	Describable      `mapstructure:",squash"`
 	OperationIDField string                 `mapstructure:"operationId"`
-	DescriptionField string                 `mapstructure:"description"`
 	MessageField     *Message               `mapstructure:"message"`
 	OperationType    asyncapi.OperationType `mapstructure:"operationType"` // set by hook
 	SummaryField     string                 `mapstructure:"summary"`
@@ -289,14 +277,6 @@ type Operation struct {
 
 func (o Operation) ID() string {
 	return o.OperationIDField
-}
-
-func (o Operation) Description() string {
-	return o.DescriptionField
-}
-
-func (o Operation) HasDescription() bool {
-	return o.DescriptionField != ""
 }
 
 func (o Operation) IsApplicationPublishing() bool {
@@ -337,9 +317,9 @@ func (o Operation) HasSummary() bool {
 
 type Message struct {
 	Extendable
+	Describable      `mapstructure:",squash"`
 	NameField        string  `mapstructure:"name"`
 	TitleField       string  `mapstructure:"title"`
-	DescriptionField string  `mapstructure:"description"`
 	SummaryField     string  `mapstructure:"summary"`
 	ContentTypeField string  `mapstructure:"contentType"`
 	PayloadField     *Schema `mapstructure:"payload"`
@@ -359,14 +339,6 @@ func (m Message) Title() string {
 
 func (m Message) HasTitle() bool {
 	return m.TitleField != ""
-}
-
-func (m Message) Description() string {
-	return m.DescriptionField
-}
-
-func (m Message) HasDescription() bool {
-	return m.DescriptionField != ""
 }
 
 func (m Message) Summary() string {
@@ -698,11 +670,11 @@ func (s *Schema) WriteOnly() bool {
 
 type Server struct {
 	Extendable
-	NameField        string                    `mapstructure:"name"`
-	DescriptionField string                    `mapstructure:"description"`
-	ProtocolField    string                    `mapstructure:"protocol"`
-	URLField         string                    `mapstructure:"url"`
-	VariablesField   map[string]ServerVariable `mapstructure:"variables"`
+	Describable    `mapstructure:",squash"`
+	NameField      string                    `mapstructure:"name"`
+	ProtocolField  string                    `mapstructure:"protocol"`
+	URLField       string                    `mapstructure:"url"`
+	VariablesField map[string]ServerVariable `mapstructure:"variables"`
 }
 
 func (s Server) Variables() []asyncapi.ServerVariable {
@@ -728,14 +700,6 @@ func (s Server) Name() string {
 
 func (s Server) HasName() bool {
 	return s.NameField != ""
-}
-
-func (s Server) Description() string {
-	return s.DescriptionField
-}
-
-func (s Server) HasDescription() bool {
-	return s.DescriptionField != ""
 }
 
 func (s Server) URL() string {
@@ -784,6 +748,18 @@ func (s ServerVariable) DefaultValue() string {
 
 func (s ServerVariable) AllowedValues() []string {
 	return s.Enum
+}
+
+type Describable struct {
+	DescriptionField string `mapstructure:"description"`
+}
+
+func (d Describable) Description() string {
+	return d.DescriptionField
+}
+
+func (d Describable) HasDescription() bool {
+	return d.DescriptionField != ""
 }
 
 type Extendable struct {
