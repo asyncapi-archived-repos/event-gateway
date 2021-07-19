@@ -1,6 +1,7 @@
 package v2
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/asyncapi/event-gateway/asyncapi"
@@ -30,9 +31,31 @@ func TestDecodeFromFile(t *testing.T) {
 	assert.True(t, s.HasExtension(asyncapi.ExtensionEventGatewayDialMapping))
 	assert.Equal(t, "broker:9092", s.Extension(asyncapi.ExtensionEventGatewayDialMapping))
 	assert.Empty(t, s.Variables())
+
+	channelPaths := []string{
+		"smartylighting.streetlights.1.0.event.{streetlightId}.lighting.measured",
+		"smartylighting.streetlights.1.0.action.{streetlightId}.turn.on",
+		"smartylighting.streetlights.1.0.action.{streetlightId}.turn.off",
+		"smartylighting.streetlights.1.0.action.{streetlightId}.dim",
+	}
+
+	require.Len(t, doc.Channels(), 4)
+	for _, c := range doc.Channels() {
+		assert.Containsf(t, channelPaths, c.Path(), "Channel path %q is not one of: %s", c.Path(), strings.Join(channelPaths, ", "))
+		assert.Len(t, c.Parameters(), 1)
+		assert.Len(t, c.Operations(), 1)
+		assert.Len(t, c.Messages(), 1)
+		for _, o := range c.Operations() {
+			assert.Containsf(t, []asyncapi.OperationType{OperationTypePublish, OperationTypeSubscribe}, o.Type(), "Operation type %q is not one of %s, %s", o.Type(), OperationTypePublish, OperationTypeSubscribe)
+		}
+
+		for _, m := range c.Messages() {
+			assert.NotNil(t, m.Payload())
+		}
+	}
 }
 
-//nolint:misspell
+//nolint:misspell,funlen
 func TestDecodeFromPlainText(t *testing.T) {
 	raw := []byte(`
 asyncapi: '2.0.0'
@@ -90,4 +113,78 @@ channels:
 	assert.False(t, s.HasExtension(asyncapi.ExtensionEventGatewayListener))
 	assert.False(t, s.HasExtension(asyncapi.ExtensionEventGatewayDialMapping))
 	assert.Empty(t, s.Variables())
+
+	assert.Len(t, doc.ApplicationPublishableChannels(), 1)
+	assert.Len(t, doc.ApplicationPublishOperations(), 1)
+	assert.Len(t, doc.ApplicationPublishableMessages(), 1)
+
+	assert.Empty(t, doc.ApplicationSubscribableChannels())
+	assert.Empty(t, doc.ApplicationSubscribeOperations())
+	assert.Empty(t, doc.ApplicationSubscribableMessages())
+
+	assert.Len(t, doc.ClientSubscribableChannels(), 1)
+	assert.Len(t, doc.ClientSubscribeOperations(), 1)
+	assert.Len(t, doc.ClientSubscribableMessages(), 1)
+
+	assert.Empty(t, doc.ClientPublishableChannels())
+	assert.Empty(t, doc.ClientPublishOperations())
+	assert.Empty(t, doc.ClientPublishableMessages())
+
+	channels := doc.Channels()
+	require.Len(t, channels, 1)
+	assert.Equal(t, "light/measured", channels[0].Path())
+	assert.Empty(t, channels[0].Parameters())
+	assert.False(t, channels[0].HasDescription())
+
+	operations := channels[0].Operations()
+	require.Len(t, operations, 1)
+	assert.Equal(t, OperationTypePublish, operations[0].Type())
+	assert.True(t, operations[0].IsApplicationPublishing())
+	assert.False(t, operations[0].IsApplicationSubscribing())
+	assert.True(t, operations[0].IsClientSubscribing())
+	assert.False(t, operations[0].IsClientPublishing())
+	assert.False(t, operations[0].HasDescription())
+	assert.True(t, operations[0].HasSummary())
+	assert.Equal(t, "Inform about environmental lighting conditions for a particular streetlight.", operations[0].Summary())
+	assert.Equal(t, "onLightMeasured", operations[0].ID())
+
+	messages := operations[0].Messages()
+	require.Len(t, messages, 1)
+
+	assert.Equal(t, "LightMeasured", messages[0].Name())
+	assert.False(t, messages[0].HasSummary())
+	assert.False(t, messages[0].HasDescription())
+	assert.False(t, messages[0].HasTitle())
+	assert.Empty(t, messages[0].ContentType())
+
+	payload := messages[0].Payload()
+	require.NotNil(t, payload)
+
+	assert.Equal(t, []string{"object"}, payload.Type())
+	properties := payload.Properties()
+	require.Len(t, properties, 3)
+
+	expectedProperties := map[string]asyncapi.Schema{
+		"id": &Schema{
+			DescriptionField: "Id of the streetlight.",
+			MinimumField:     refFloat64(0),
+			TypeField:        "integer",
+		},
+		"lumens": &Schema{
+			DescriptionField: "Light intensity measured in lumens.",
+			MinimumField:     refFloat64(0),
+			TypeField:        "integer",
+		},
+		"sentAt": &Schema{
+			DescriptionField: "Date and time when the message was sent.",
+			FormatField:      "date-time",
+			TypeField:        "string",
+		},
+	}
+
+	assert.Equal(t, expectedProperties, properties)
+}
+
+func refFloat64(v float64) *float64 {
+	return &v
 }

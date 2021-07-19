@@ -34,7 +34,7 @@ func Decode(b []byte, dst interface{}) error {
 	}
 
 	dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		DecodeHook: setModelIdentifierHook,
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(setModelIdentifierHook, setDefaultsHook),
 		Squash:     true,
 		Result:     dst,
 	})
@@ -46,7 +46,7 @@ func Decode(b []byte, dst interface{}) error {
 }
 
 // setModelIdentifierHook is a hook for the mapstructure decoder.
-// It checks if the destination field is a map of Identifiable elements and sets the proper identifier (name, id, etc) to it.
+// It checks if the destination type is a map of Identifiable elements and sets the proper identifier (name, id, etc) to it.
 // Example: Useful for storing the name of the server in the Server struct (AsyncAPI doc does not have such field because it assumes the name is the key of the map).
 func setModelIdentifierHook(from reflect.Type, to reflect.Type, data interface{}) (interface{}, error) {
 	if from.Kind() != reflect.Map || to.Kind() != reflect.Map {
@@ -62,6 +62,37 @@ func setModelIdentifierHook(from reflect.Type, to reflect.Type, data interface{}
 	for k, v := range data.(map[string]interface{}) {
 		// setting the value directly in the raw map. The struct needs to keep the mapstructure field tag so it unmarshals the field.
 		v.(map[string]interface{})[fieldName] = k
+	}
+
+	return data, nil
+}
+
+// MapStructureDefaultsProvider tells to mapstructure setDefaultsHook the defaults value for that type.
+type MapStructureDefaultsProvider interface {
+	MapStructureDefaults() map[string]interface{}
+}
+
+// setDefaultsHook is a hook for the mapstructure decoder.
+// It checks if the destination type implements MapStructureDefaultsProvider.
+// If so, it gets the defaults values from it and sets them if empty.
+func setDefaultsHook(_ reflect.Type, to reflect.Type, data interface{}) (interface{}, error) {
+	if !to.Implements(reflect.TypeOf((*MapStructureDefaultsProvider)(nil)).Elem()) {
+		return data, nil
+	}
+
+	var toType reflect.Type
+	switch to.Kind() { //nolint:exhaustive
+	case reflect.Array, reflect.Chan, reflect.Map, reflect.Ptr, reflect.Slice:
+		toType = to.Elem()
+	default:
+		toType = to
+	}
+
+	defaults := reflect.New(toType).Interface().(MapStructureDefaultsProvider).MapStructureDefaults()
+	for k, v := range defaults {
+		if _, ok := data.(map[string]interface{})[k]; !ok {
+			data.(map[string]interface{})[k] = v
+		}
 	}
 
 	return data, nil
