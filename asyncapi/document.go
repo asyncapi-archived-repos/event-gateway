@@ -30,9 +30,8 @@ type Document interface {
 type Channel interface {
 	Extendable
 	Identifiable
+	Describable
 	Path() string // Path is the identifier
-	Description() string
-	HasDescription() bool
 	Parameters() []ChannelParameter
 	HasParameters() bool
 	Operations() []Operation
@@ -43,8 +42,8 @@ type Channel interface {
 type ChannelParameter interface {
 	Extendable
 	Identifiable
+	Describable
 	Name() string
-	Description() string
 	Schema() Schema
 }
 
@@ -55,9 +54,8 @@ type OperationType string
 // This provides a place to document how and why messages are sent and received.
 type Operation interface {
 	Extendable
+	Describable
 	ID() string
-	Description() string
-	HasDescription() bool
 	IsApplicationPublishing() bool
 	IsApplicationSubscribing() bool
 	IsClientPublishing() bool
@@ -71,12 +69,11 @@ type Operation interface {
 // Message describes a message received on a given channel and operation.
 type Message interface {
 	Extendable
+	Describable
 	UID() string
 	Name() string
 	Title() string
 	HasTitle() bool
-	Description() string
-	HasDescription() bool
 	Summary() string
 	HasSummary() bool
 	ContentType() string
@@ -145,10 +142,9 @@ type Schema interface {
 type Server interface {
 	Extendable
 	Identifiable
+	Describable
 	Name() string
 	HasName() bool
-	Description() string
-	HasDescription() bool
 	URL() string
 	HasURL() bool
 	Protocol() string
@@ -172,6 +168,12 @@ type ServerVariable interface {
 type Extendable interface {
 	HasExtension(name string) bool
 	Extension(name string) interface{}
+}
+
+// Describable means the object can have a description.
+type Describable interface {
+	Description() string
+	HasDescription() bool
 }
 
 // Identifiable identifies objects. Some objects can have fields that identify themselves as unique resources.
