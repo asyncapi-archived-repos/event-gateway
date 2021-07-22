@@ -168,6 +168,13 @@ func (d Document) filterOperations(filter func(operation asyncapi.Operation) boo
 	return operations
 }
 
+// NewChannel creates a new Channel. Useful for testing.
+func NewChannel(path string) *Channel {
+	return &Channel{
+		PathField: path,
+	}
+}
+
 type Channel struct {
 	Extendable
 	Describable     `mapstructure:",squash"`
@@ -250,10 +257,20 @@ type SubscribeOperation struct {
 	Operation
 }
 
+// NewSubscribeOperation creates a new SubscribeOperation. Useful for testing.
+func NewSubscribeOperation(msg *Message) *SubscribeOperation {
+	return &SubscribeOperation{Operation: *NewOperation(OperationTypeSubscribe, msg)}
+}
+
 func (o SubscribeOperation) MapStructureDefaults() map[string]interface{} {
 	return map[string]interface{}{
 		"operationType": OperationTypeSubscribe,
 	}
+}
+
+// NewPublishOperation creates a new PublishOperation. Useful for testing.
+func NewPublishOperation(msg *Message) *PublishOperation {
+	return &PublishOperation{Operation: *NewOperation(OperationTypePublish, msg)}
 }
 
 type PublishOperation struct {
@@ -264,6 +281,19 @@ func (o PublishOperation) MapStructureDefaults() map[string]interface{} {
 	return map[string]interface{}{
 		"operationType": OperationTypePublish,
 	}
+}
+
+// NewOperation creates a new Operation. Useful for testing.
+func NewOperation(operationType asyncapi.OperationType, msg *Message) *Operation {
+	op := &Operation{
+		OperationType: operationType,
+	}
+
+	if msg != nil {
+		op.MessageField = msg
+	}
+
+	return op
 }
 
 type Operation struct {
@@ -377,57 +407,57 @@ func (s Schemas) ToInterface(dst map[string]asyncapi.Schema) map[string]asyncapi
 
 type Schema struct {
 	Extendable
-	AdditionalItemsField      *Schema           `mapstructure:"additionalItems"`
-	AdditionalPropertiesField *Schema           `mapstructure:"additionalProperties"`
-	AllOfField                []asyncapi.Schema `mapstructure:"allOf"`
-	AnyOfField                []asyncapi.Schema `mapstructure:"anyOf"`
-	ConstField                interface{}       `mapstructure:"const"`
-	ContainsField             *Schema           `mapstructure:"contains"`
-	ContentEncodingField      string            `mapstructure:"contentEncoding"`
-	ContentMediaTypeField     string            `mapstructure:"contentMediaType"`
-	DefaultField              interface{}       `mapstructure:"default"`
-	DefinitionsField          Schemas           `mapstructure:"definitions"`
-	DependenciesField         Schemas           `mapstructure:"dependencies"`
-	DeprecatedField           bool              `mapstructure:"deprecated"`
-	DescriptionField          string            `mapstructure:"description"`
-	DiscriminatorField        string            `mapstructure:"discriminator"`
-	ElseField                 *Schema           `mapstructure:"else"`
-	EnumField                 []interface{}     `mapstructure:"enum"`
-	ExamplesField             []interface{}     `mapstructure:"examples"`
-	ExclusiveMaximumField     *float64          `mapstructure:"exclusiveMaximum"`
-	ExclusiveMinimumField     *float64          `mapstructure:"exclusiveMinimum"`
-	FormatField               string            `mapstructure:"format"`
-	IDField                   string            `mapstructure:"$id"`
-	IfField                   *Schema           `mapstructure:"if"`
-	ItemsField                []asyncapi.Schema `mapstructure:"items"`
-	MaximumField              *float64          `mapstructure:"maximum"`
-	MaxItemsField             *float64          `mapstructure:"maxItems"`
-	MaxLengthField            *float64          `mapstructure:"maxLength"`
-	MaxPropertiesField        *float64          `mapstructure:"maxProperties"`
-	MinimumField              *float64          `mapstructure:"minimum"`
-	MinItemsField             *float64          `mapstructure:"minItems"`
-	MinLengthField            *float64          `mapstructure:"minLength"`
-	MinPropertiesField        *float64          `mapstructure:"minProperties"`
-	MultipleOfField           *float64          `mapstructure:"multipleOf"`
-	NotField                  *Schema           `mapstructure:"not"`
-	OneOfField                *Schema           `mapstructure:"oneOf"`
-	PatternField              string            `mapstructure:"pattern"`
-	PatternPropertiesField    Schemas           `mapstructure:"patternProperties"`
-	PropertiesField           Schemas           `mapstructure:"properties"`
-	PropertyNamesField        *Schema           `mapstructure:"propertyNames"`
-	ReadOnlyField             bool              `mapstructure:"readOnly"`
-	RequiredField             string            `mapstructure:"required"`
-	ThenField                 *Schema           `mapstructure:"then"`
-	TitleField                string            `mapstructure:"title"`
-	TypeField                 interface{}       `mapstructure:"type"` // string | []string
-	UniqueItemsField          bool              `mapstructure:"uniqueItems"`
-	WriteOnlyField            bool              `mapstructure:"writeOnly"`
+	AdditionalItemsField      *Schema           `mapstructure:"additionalItems" json:"additionalItems,omitempty"`
+	AdditionalPropertiesField *Schema           `mapstructure:"additionalProperties" json:"additionalProperties,omitempty"`
+	AllOfField                []asyncapi.Schema `mapstructure:"allOf" json:"allOf,omitempty"`
+	AnyOfField                []asyncapi.Schema `mapstructure:"anyOf" json:"anyOf,omitempty"`
+	ConstField                interface{}       `mapstructure:"const" json:"const,omitempty"`
+	ContainsField             *Schema           `mapstructure:"contains" json:"contains,omitempty"`
+	ContentEncodingField      string            `mapstructure:"contentEncoding" json:"contentEncoding,omitempty"`
+	ContentMediaTypeField     string            `mapstructure:"contentMediaType" json:"contentMediaType,omitempty"`
+	DefaultField              interface{}       `mapstructure:"default" json:"default,omitempty"`
+	DefinitionsField          Schemas           `mapstructure:"definitions" json:"definitions,omitempty"`
+	DependenciesField         Schemas           `mapstructure:"dependencies" json:"dependencies,omitempty"`
+	DeprecatedField           bool              `mapstructure:"deprecated" json:"deprecated,omitempty"`
+	DescriptionField          string            `mapstructure:"description" json:"description,omitempty"`
+	DiscriminatorField        string            `mapstructure:"discriminator" json:"discriminator,omitempty"`
+	ElseField                 *Schema           `mapstructure:"else" json:"else,omitempty"`
+	EnumField                 []interface{}     `mapstructure:"enum" json:"enum,omitempty"`
+	ExamplesField             []interface{}     `mapstructure:"examples" json:"examples,omitempty"`
+	ExclusiveMaximumField     *float64          `mapstructure:"exclusiveMaximum" json:"exclusiveMaximum,omitempty"`
+	ExclusiveMinimumField     *float64          `mapstructure:"exclusiveMinimum" json:"exclusiveMinimum,omitempty"`
+	FormatField               string            `mapstructure:"format" json:"format,omitempty"`
+	IDField                   string            `mapstructure:"$id" json:"$id,omitempty"`
+	IfField                   *Schema           `mapstructure:"if" json:"if,omitempty"`
+	ItemsField                []asyncapi.Schema `mapstructure:"items" json:"items,omitempty"`
+	MaximumField              *float64          `mapstructure:"maximum" json:"maximum,omitempty"`
+	MaxItemsField             *float64          `mapstructure:"maxItems" json:"maxItems,omitempty"`
+	MaxLengthField            *float64          `mapstructure:"maxLength" json:"maxLength,omitempty"`
+	MaxPropertiesField        *float64          `mapstructure:"maxProperties" json:"maxProperties,omitempty"`
+	MinimumField              *float64          `mapstructure:"minimum" json:"minimum,omitempty"`
+	MinItemsField             *float64          `mapstructure:"minItems" json:"minItems,omitempty"`
+	MinLengthField            *float64          `mapstructure:"minLength" json:"minLength,omitempty"`
+	MinPropertiesField        *float64          `mapstructure:"minProperties" json:"minProperties,omitempty"`
+	MultipleOfField           *float64          `mapstructure:"multipleOf" json:"multipleOf,omitempty"`
+	NotField                  *Schema           `mapstructure:"not" json:"not,omitempty"`
+	OneOfField                *Schema           `mapstructure:"oneOf" json:"oneOf,omitempty"`
+	PatternField              string            `mapstructure:"pattern" json:"pattern,omitempty"`
+	PatternPropertiesField    Schemas           `mapstructure:"patternProperties" json:"patternProperties,omitempty"`
+	PropertiesField           Schemas           `mapstructure:"properties" json:"properties,omitempty"`
+	PropertyNamesField        *Schema           `mapstructure:"propertyNames" json:"propertyNames,omitempty"`
+	ReadOnlyField             bool              `mapstructure:"readOnly" json:"readOnly,omitempty"`
+	RequiredField             []string          `mapstructure:"required" json:"required,omitempty"`
+	ThenField                 *Schema           `mapstructure:"then" json:"then,omitempty"`
+	TitleField                string            `mapstructure:"title" json:"title,omitempty"`
+	TypeField                 interface{}       `mapstructure:"type" json:"type"` // string | []string
+	UniqueItemsField          bool              `mapstructure:"uniqueItems" json:"uniqueItems,omitempty"`
+	WriteOnlyField            bool              `mapstructure:"writeOnly" json:"writeOnly,omitempty"`
 
 	// cached converted map[string]asyncapi.Schema from map[string]*Schema
-	propertiesFieldMap        map[string]asyncapi.Schema
-	patternPropertiesFieldMap map[string]asyncapi.Schema
-	DefinitionsFieldMap       map[string]asyncapi.Schema
-	DependenciesFieldMap      map[string]asyncapi.Schema
+	propertiesFieldMap        map[string]asyncapi.Schema `json:"-"`
+	patternPropertiesFieldMap map[string]asyncapi.Schema `json:"-"`
+	DefinitionsFieldMap       map[string]asyncapi.Schema `json:"-"`
+	DependenciesFieldMap      map[string]asyncapi.Schema `json:"-"`
 }
 
 func (s *Schema) AdditionalItems() asyncapi.Schema {
@@ -617,8 +647,7 @@ func (s *Schema) ReadOnly() bool {
 	return s.ReadOnlyField
 }
 
-func (s *Schema) Required() string {
-	// TODO string[]
+func (s *Schema) Required() []string {
 	return s.RequiredField
 }
 
@@ -759,7 +788,7 @@ func (d Describable) HasDescription() bool {
 }
 
 type Extendable struct {
-	Raw map[string]interface{} `mapstructure:",remain"`
+	Raw map[string]interface{} `mapstructure:",remain" json:"-"`
 }
 
 func (e Extendable) HasExtension(name string) bool {

@@ -128,7 +128,7 @@ type Schema interface {
 	Property(name string) Schema
 	PropertyNames() Schema
 	ReadOnly() bool
-	Required() string // TODO string[]
+	Required() []string
 	Then() Schema
 	Title() string
 	Type() []string // TODO // string | string[]

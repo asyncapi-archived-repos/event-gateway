@@ -9,13 +9,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//nolint:funlen
 func TestKafkaProxy_ProxyConfig(t *testing.T) {
 	tests := []struct {
 		name                string
 		config              *KafkaProxy
 		doc                 []byte
-		expectedProxyConfig *kafka.ProxyConfig
+		expectedProxyConfig func(*testing.T, *kafka.ProxyConfig) *kafka.ProxyConfig
 		expectedErr         error
 	}{
 		{
@@ -23,8 +22,25 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 			config: &KafkaProxy{
 				BrokerFromServer: "test",
 			},
-			expectedProxyConfig: &kafka.ProxyConfig{
-				BrokersMapping: []string{"broker.mybrokers.org:9092,:9092"},
+			expectedProxyConfig: func(_ *testing.T, _ *kafka.ProxyConfig) *kafka.ProxyConfig {
+				return &kafka.ProxyConfig{
+					BrokersMapping: []string{"broker.mybrokers.org:9092,:9092"},
+				}
+			},
+			doc: []byte(`testdata/simple-kafka.yaml`),
+		},
+		{
+			name: "Valid config. Only one broker from doc + enable message validation",
+			config: &KafkaProxy{
+				BrokerFromServer: "test",
+				MessageValidation: MessageValidation{
+					Enabled: true,
+				},
+			},
+			expectedProxyConfig: func(t *testing.T, c *kafka.ProxyConfig) *kafka.ProxyConfig {
+				assert.Equal(t, []string{"broker.mybrokers.org:9092,:9092"}, c.BrokersMapping)
+				assert.Len(t, c.MessageHandlers, 1)
+				return nil
 			},
 			doc: []byte(`testdata/simple-kafka.yaml`),
 		},
@@ -33,8 +49,10 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 			config: &KafkaProxy{
 				BrokersMapping: pipeSeparatedValues{Values: []string{"broker.mybrokers.org:9092,:9092"}},
 			},
-			expectedProxyConfig: &kafka.ProxyConfig{
-				BrokersMapping: []string{"broker.mybrokers.org:9092,:9092"},
+			expectedProxyConfig: func(_ *testing.T, _ *kafka.ProxyConfig) *kafka.ProxyConfig {
+				return &kafka.ProxyConfig{
+					BrokersMapping: []string{"broker.mybrokers.org:9092,:9092"},
+				}
 			},
 		},
 		{
@@ -43,9 +61,11 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 				BrokersMapping:     pipeSeparatedValues{Values: []string{"broker.mybrokers.org:9092,:9092"}},
 				BrokersDialMapping: pipeSeparatedValues{Values: []string{"broker.mybrokers.org:9092,192.168.1.10:9092"}},
 			},
-			expectedProxyConfig: &kafka.ProxyConfig{
-				BrokersMapping:     []string{"broker.mybrokers.org:9092,:9092"},
-				DialAddressMapping: []string{"broker.mybrokers.org:9092,192.168.1.10:9092"},
+			expectedProxyConfig: func(_ *testing.T, _ *kafka.ProxyConfig) *kafka.ProxyConfig {
+				return &kafka.ProxyConfig{
+					BrokersMapping:     []string{"broker.mybrokers.org:9092,:9092"},
+					DialAddressMapping: []string{"broker.mybrokers.org:9092,192.168.1.10:9092"},
+				}
 			},
 		},
 		{
@@ -78,7 +98,9 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 			}
 
 			if test.expectedProxyConfig != nil {
-				assert.EqualValues(t, test.expectedProxyConfig, proxyConfig)
+				if expectedConf := test.expectedProxyConfig(t, proxyConfig); expectedConf != nil {
+					assert.EqualValues(t, expectedConf, proxyConfig)
+				}
 			}
 		})
 	}

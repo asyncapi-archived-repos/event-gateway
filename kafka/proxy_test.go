@@ -6,12 +6,15 @@ import (
 	"hash/crc32"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
+
+	logrustest "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/asyncapi/event-gateway/proxy"
 	kafkaproxy "github.com/grepplabs/kafka-proxy/proxy"
 	kafkaprotocol "github.com/grepplabs/kafka-proxy/proxy/protocol"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	logrustest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,13 +54,14 @@ func TestNewKafka(t *testing.T) {
 	}
 }
 
-func TestRequestKeyHandler_Handle(t *testing.T) {
+func TestProduceRequestHandler_Handle(t *testing.T) {
 	tests := []struct {
 		name              string
 		request           []byte
 		shouldReply       bool
 		apiKey            int16
 		shouldSkipRequest bool
+		expectedLoggedErr error
 	}{
 		{
 			name:        "Valid message",
@@ -65,9 +69,10 @@ func TestRequestKeyHandler_Handle(t *testing.T) {
 			shouldReply: true,
 		},
 		{
-			name:        "Invalid message",
-			request:     generateProduceRequestV8("invalid message"),
-			shouldReply: true,
+			name:              "Invalid message",
+			request:           generateProduceRequestV8("invalid message"),
+			shouldReply:       true,
+			expectedLoggedErr: errors.New("message is invalid"),
 		},
 		{
 			name:              "Other Requests (different than Produce type) are skipped",
@@ -86,9 +91,17 @@ func TestRequestKeyHandler_Handle(t *testing.T) {
 				Length:     int32(len(test.request) + 4), // 4 bytes are ApiKey + Version located in all request headers (already read by the time of validating the msg).
 			}
 
-			readBytes := bytes.NewBuffer(nil)
-			var h requestKeyHandler
+			simpleMessageValidationHandler := func(m Message) error {
+				if string(m.Value) == "invalid message" {
+					return errors.New("message is invalid")
+				}
 
+				return nil
+			}
+
+			h := NewProduceRequestHandler(simpleMessageValidationHandler)
+
+			readBytes := bytes.NewBuffer(nil)
 			shouldReply, err := h.Handle(kv, bytes.NewReader(test.request), &kafkaproxy.RequestsLoopContext{}, readBytes)
 			assert.NoError(t, err)
 			assert.Equal(t, test.shouldReply, shouldReply)
@@ -99,14 +112,20 @@ func TestRequestKeyHandler_Handle(t *testing.T) {
 				assert.Equal(t, readBytes.Len(), len(test.request))
 			}
 
-			for _, l := range log.AllEntries() {
-				assert.NotEqualf(t, l.Level, logrus.ErrorLevel, "%q logged error unexpected", l.Message) // We don't have a notification mechanism for errors yet
+			if test.expectedLoggedErr != nil {
+				entry := log.LastEntry()
+				require.NotEmpty(t, entry)
+				require.Contains(t, entry.Data, logrus.ErrorKey)
+				assert.EqualError(t, entry.Data[logrus.ErrorKey].(error), test.expectedLoggedErr.Error())
+			} else {
+				for _, l := range log.AllEntries() {
+					assert.NotEqualf(t, l.Level, logrus.ErrorLevel, "%q logged error unexpected", l.Message) // We don't have a notification mechanism for errors yet
+				}
 			}
 		})
 	}
 }
 
-//nolint:funlen
 func generateProduceRequestV8(payload string) []byte {
 	// Note: Taking V8 as random version.
 	buf := bytes.NewBuffer(nil)
@@ -140,8 +159,7 @@ func generateProduceRequestV8(payload string) []byte {
 
 	// batch len <int32>
 	batchLen := make([]byte, 4)
-	binary.BigEndian.Uint32(requestSize)
-	binary.BigEndian.PutUint32(batchLen, requestSizeInt+uint32(len(baseOffset)+len(payload)))
+	binary.BigEndian.PutUint32(batchLen, requestSizeInt-uint32(len(baseOffset)+len(batchLen)))
 	buf.Write(batchLen)
 
 	//   partition leader epoch: 255, 255, 255, 255
@@ -165,8 +183,10 @@ func generateProduceRequestV8(payload string) []byte {
 	buf.Write([]byte{0, 0, 0, 0, 0, 0, 0, 0, 1, 122, 129, 58, 129, 47, 0, 0, 1, 122, 129, 58, 129, 47, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 0, 0, 1})
 
 	// record len <int8>
-	recordLenInt := 27 + len(payload)
-	buf.WriteByte(byte(recordLenInt))
+	// attributes + timestamp delta + offset + key + payload len field + actual payload len
+	recordLen := make([]byte, 1)
+	binary.PutVarint(recordLen, int64(4+1+len(payload)+1))
+	buf.Write(recordLen)
 
 	//       attributes: 0
 	//       timestamp delta: 0
@@ -187,7 +207,7 @@ func generateProduceRequestV8(payload string) []byte {
 
 	table := crc32.MakeTable(crc32.Castagnoli)
 	crc32Calculator := crc32.New(table)
-	crc32Calculator.Write(buf.Bytes()[crc32ReservationStart+4:])
+	_, _ = crc32Calculator.Write(buf.Bytes()[crc32ReservationStart+4:])
 
 	hash := crc32Calculator.Sum(make([]byte, 0))
 	for i := 0; i < len(hash); i++ {

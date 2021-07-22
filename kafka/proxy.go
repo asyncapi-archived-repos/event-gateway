@@ -15,6 +15,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Context is the context that surrounds a Message.
+type Context struct {
+	Topic string
+}
+
+// Message is a message flowing through a Kafka topic.
+type Message struct {
+	Context Context
+	Key     []byte
+	Value   []byte
+	Headers []*protocol.RecordHeader
+}
+
+// MessageHandler handles a Kafka message.
+// If error is returned, kafka request will fail.
+// Note: Message manipulation is not allowed.
+type MessageHandler func(Message) error
+
 // NewProxy creates a new Kafka Proxy based on a given configuration.
 func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 	if c == nil {
@@ -26,7 +44,7 @@ func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 	}
 
 	// Yeah, not a good practice at all but I guess it's fine for now.
-	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(protocol.RequestAPIKeyProduce, &requestKeyHandler{})
+	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(protocol.RequestAPIKeyProduce, NewProduceRequestHandler(c.MessageHandlers...))
 
 	if c.BrokersMapping == nil {
 		return nil, errors.New("Brokers mapping is required")
@@ -54,13 +72,28 @@ func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 	}, nil
 }
 
-type requestKeyHandler struct{}
+// NewProduceRequestHandler creates a new request key handler for the Produce Request.
+func NewProduceRequestHandler(msgHandlers ...MessageHandler) kafkaproxy.KeyHandler {
+	return &produceRequestHandler{
+		msgHandlers: msgHandlers,
+	}
+}
 
-func (r *requestKeyHandler) Handle(requestKeyVersion *kafkaprotocol.RequestKeyVersion, src io.Reader, ctx *kafkaproxy.RequestsLoopContext, bufferRead *bytes.Buffer) (shouldReply bool, err error) {
+type produceRequestHandler struct {
+	msgHandlers []MessageHandler
+}
+
+func (h *produceRequestHandler) Handle(requestKeyVersion *kafkaprotocol.RequestKeyVersion, src io.Reader, ctx *kafkaproxy.RequestsLoopContext, bufferRead *bytes.Buffer) (shouldReply bool, err error) {
+	if len(h.msgHandlers) == 0 {
+		logrus.Infoln("No message handlers were set. Skipping produceRequestHandler")
+		return true, nil
+	}
+
 	if requestKeyVersion.ApiKey != protocol.RequestAPIKeyProduce {
 		return true, nil
 	}
 
+	// TODO error handling should be responsibility of an error handler instead of being just logged.
 	shouldReply, err = kafkaproxy.DefaultProduceKeyHandlerFunc(requestKeyVersion, src, ctx, bufferRead)
 	if err != nil {
 		return
@@ -70,34 +103,24 @@ func (r *requestKeyHandler) Handle(requestKeyVersion *kafkaprotocol.RequestKeyVe
 	if _, err = io.ReadFull(io.TeeReader(src, bufferRead), msg); err != nil {
 		return
 	}
+
 	var req protocol.ProduceRequest
 	if err = protocol.VersionedDecode(msg, &req, requestKeyVersion.ApiVersion); err != nil {
-		logrus.Errorln(errors.Wrap(err, "error decoding ProduceRequest"))
-		// TODO notify error to a given notifier
-
-		// Do not return an error but log it.
+		logrus.WithError(err).Error("error decoding ProduceRequest")
 		return shouldReply, nil
 	}
 
-	for _, r := range req.Records {
-		for _, s := range r {
-			if s.RecordBatch != nil {
-				for _, r := range s.RecordBatch.Records {
-					if !isValid(r.Value) {
-						logrus.Debugln("Message is not valid")
-					} else {
-						logrus.Debugln("Message is valid")
-					}
-				}
-			}
-			if s.MsgSet != nil {
-				for _, mb := range s.MsgSet.Messages {
-					if !isValid(mb.Msg.Value) {
-						logrus.Debugln("Message is not valid")
-					} else {
-						logrus.Debugln("Message is valid")
-					}
-				}
+	msgs := h.extractMessages(req)
+	if len(msgs) == 0 {
+		logrus.Error("The produce request has no messages")
+		return
+	}
+
+	for _, m := range msgs {
+		for _, h := range h.msgHandlers {
+			if err := h(m); err != nil {
+				logrus.WithError(err).Error("error handling message")
+				return shouldReply, nil
 			}
 		}
 	}
@@ -105,6 +128,33 @@ func (r *requestKeyHandler) Handle(requestKeyVersion *kafkaprotocol.RequestKeyVe
 	return shouldReply, nil
 }
 
-func isValid(msg []byte) bool {
-	return string(msg) != "invalid message"
+func (h *produceRequestHandler) extractMessages(req protocol.ProduceRequest) []Message {
+	var msgs []Message
+	for topic, r := range req.Records {
+		for _, s := range r {
+			if s.RecordBatch != nil {
+				for _, r := range s.RecordBatch.Records {
+					msgs = append(msgs, Message{
+						Context: Context{
+							Topic: topic,
+						},
+						Value:   r.Value,
+						Headers: r.Headers,
+					})
+				}
+			}
+			if s.MsgSet != nil {
+				for _, mb := range s.MsgSet.Messages {
+					msgs = append(msgs, Message{
+						Context: Context{
+							Topic: topic,
+						},
+						Value: mb.Msg.Value,
+						Key:   mb.Msg.Key,
+					})
+				}
+			}
+		}
+	}
+	return msgs
 }

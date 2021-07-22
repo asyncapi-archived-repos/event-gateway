@@ -55,7 +55,7 @@ func TestDecodeFromFile(t *testing.T) {
 	}
 }
 
-//nolint:misspell,funlen
+//nolint:misspell
 func TestDecodeFromPlainText(t *testing.T) {
 	raw := []byte(`
 asyncapi: '2.0.0'
