@@ -449,7 +449,7 @@ type Schema struct {
 	RequiredField             []string          `mapstructure:"required" json:"required,omitempty"`
 	ThenField                 *Schema           `mapstructure:"then" json:"then,omitempty"`
 	TitleField                string            `mapstructure:"title" json:"title,omitempty"`
-	TypeField                 interface{}       `mapstructure:"type" json:"type"` // string | []string
+	TypeField                 interface{}       `mapstructure:"type" json:"type,omitempty"` // string | []string
 	UniqueItemsField          bool              `mapstructure:"uniqueItems" json:"uniqueItems,omitempty"`
 	WriteOnlyField            bool              `mapstructure:"writeOnly" json:"writeOnly,omitempty"`
 
