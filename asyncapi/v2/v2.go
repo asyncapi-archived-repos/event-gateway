@@ -327,8 +327,21 @@ func (o Operation) IsClientSubscribing() bool {
 
 func (o Operation) Messages() []asyncapi.Message {
 	if o.MessageField != nil {
-		return []asyncapi.Message{o.MessageField}
+		if len(o.MessageField.Payload().OneOf()) == 0 {
+			return []asyncapi.Message{o.MessageField}
+		}
+
+		var msgs []asyncapi.Message
+		for _, payload := range o.MessageField.Payload().OneOf() {
+			p := payload.(*Schema)
+			msgs = append(msgs, Message{
+				PayloadField: p,
+			})
+		}
+
+		return msgs
 	}
+
 	return nil
 }
 
@@ -405,10 +418,40 @@ func (s Schemas) ToInterface(dst map[string]asyncapi.Schema) map[string]asyncapi
 	return dst
 }
 
+type FalsifiableSchema struct {
+	val interface{}
+}
+
+// NewFalsifiableSchema creates a new FalsifiableSchema.
+func NewFalsifiableSchema(val interface{}) *FalsifiableSchema {
+	if val == nil {
+		return nil
+	}
+	return &FalsifiableSchema{val: val}
+}
+
+func (f FalsifiableSchema) IsFalse() bool {
+	_, ok := f.val.(bool)
+	return ok
+}
+
+func (f FalsifiableSchema) IsSchema() bool {
+	_, ok := f.val.(*Schema)
+	return ok
+}
+
+func (f FalsifiableSchema) Schema() asyncapi.Schema {
+	if f.IsSchema() {
+		return f.val.(*Schema)
+	}
+
+	return nil
+}
+
 type Schema struct {
 	Extendable
-	AdditionalItemsField      *Schema           `mapstructure:"additionalItems" json:"additionalItems,omitempty"`
-	AdditionalPropertiesField *Schema           `mapstructure:"additionalProperties" json:"additionalProperties,omitempty"`
+	AdditionalItemsField      interface{}       `mapstructure:"additionalItems" json:"additionalItems,omitempty"`
+	AdditionalPropertiesField interface{}       `mapstructure:"additionalProperties" json:"additionalProperties,omitempty"` // Schema || false
 	AllOfField                []asyncapi.Schema `mapstructure:"allOf" json:"allOf,omitempty"`
 	AnyOfField                []asyncapi.Schema `mapstructure:"anyOf" json:"anyOf,omitempty"`
 	ConstField                interface{}       `mapstructure:"const" json:"const,omitempty"`
@@ -440,7 +483,7 @@ type Schema struct {
 	MinPropertiesField        *float64          `mapstructure:"minProperties" json:"minProperties,omitempty"`
 	MultipleOfField           *float64          `mapstructure:"multipleOf" json:"multipleOf,omitempty"`
 	NotField                  *Schema           `mapstructure:"not" json:"not,omitempty"`
-	OneOfField                *Schema           `mapstructure:"oneOf" json:"oneOf,omitempty"`
+	OneOfField                []asyncapi.Schema `mapstructure:"oneOf" json:"oneOf,omitempty"`
 	PatternField              string            `mapstructure:"pattern" json:"pattern,omitempty"`
 	PatternPropertiesField    Schemas           `mapstructure:"patternProperties" json:"patternProperties,omitempty"`
 	PropertiesField           Schemas           `mapstructure:"properties" json:"properties,omitempty"`
@@ -454,18 +497,18 @@ type Schema struct {
 	WriteOnlyField            bool              `mapstructure:"writeOnly" json:"writeOnly,omitempty"`
 
 	// cached converted map[string]asyncapi.Schema from map[string]*Schema
-	propertiesFieldMap        map[string]asyncapi.Schema `json:"-"`
-	patternPropertiesFieldMap map[string]asyncapi.Schema `json:"-"`
-	DefinitionsFieldMap       map[string]asyncapi.Schema `json:"-"`
-	DependenciesFieldMap      map[string]asyncapi.Schema `json:"-"`
+	propertiesFieldMap        map[string]asyncapi.Schema
+	patternPropertiesFieldMap map[string]asyncapi.Schema
+	definitionsFieldMap       map[string]asyncapi.Schema
+	dependenciesFieldMap      map[string]asyncapi.Schema
 }
 
-func (s *Schema) AdditionalItems() asyncapi.Schema {
-	return s.AdditionalItemsField
+func (s *Schema) AdditionalItems() asyncapi.FalsifiableSchema {
+	return NewFalsifiableSchema(s.AdditionalItemsField)
 }
 
-func (s *Schema) AdditionalProperties() asyncapi.Schema {
-	return s.AdditionalPropertiesField
+func (s *Schema) AdditionalProperties() asyncapi.FalsifiableSchema {
+	return NewFalsifiableSchema(s.AdditionalPropertiesField)
 }
 
 func (s *Schema) AllOf() []asyncapi.Schema {
@@ -505,14 +548,14 @@ func (s *Schema) Default() interface{} {
 }
 
 func (s *Schema) Definitions() map[string]asyncapi.Schema {
-	s.DefinitionsFieldMap = s.DefinitionsField.ToInterface(s.DefinitionsFieldMap)
-	return s.DefinitionsFieldMap
+	s.definitionsFieldMap = s.DefinitionsField.ToInterface(s.definitionsFieldMap)
+	return s.definitionsFieldMap
 }
 
 func (s *Schema) Dependencies() map[string]asyncapi.Schema {
 	// TODO Map[string, Schema|string[]]
-	s.DependenciesFieldMap = s.DependenciesField.ToInterface(s.DependenciesFieldMap)
-	return s.DependenciesFieldMap
+	s.dependenciesFieldMap = s.DependenciesField.ToInterface(s.dependenciesFieldMap)
+	return s.dependenciesFieldMap
 }
 
 func (s *Schema) Deprecated() bool {
@@ -616,8 +659,7 @@ func (s *Schema) Not() asyncapi.Schema {
 	return s.NotField
 }
 
-func (s *Schema) OneOf() asyncapi.Schema {
-	// TODO Schema[]
+func (s *Schema) OneOf() []asyncapi.Schema {
 	return s.OneOfField
 }
 

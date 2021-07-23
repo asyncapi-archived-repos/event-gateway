@@ -80,14 +80,22 @@ type Message interface {
 	Payload() Schema
 }
 
+// FalsifiableSchema is a variadic type used for some Schema fields.
+// For example, additionalProperties value can be either `false` or a Schema.
+type FalsifiableSchema interface {
+	IsFalse() bool
+	IsSchema() bool
+	Schema() Schema
+}
+
 // Schema is an object that allows the definition of input and output data types.
 // These types can be objects, but also primitives and arrays.
 // This object is a superset of the JSON Schema Specification Draft 07.
 type Schema interface {
 	Extendable
 	ID() string
-	AdditionalItems() Schema
-	AdditionalProperties() Schema // TODO (boolean | Schema)
+	AdditionalItems() FalsifiableSchema
+	AdditionalProperties() FalsifiableSchema // TODO (boolean | Schema)
 	AllOf() []Schema
 	AnyOf() []Schema
 	CircularProps() []string
@@ -121,7 +129,7 @@ type Schema interface {
 	MinProperties() *float64
 	MultipleOf() *float64
 	Not() Schema
-	OneOf() Schema
+	OneOf() []Schema
 	Pattern() string
 	PatternProperties() map[string]Schema
 	Properties() map[string]Schema

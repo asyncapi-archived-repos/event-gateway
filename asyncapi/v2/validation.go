@@ -3,6 +3,7 @@ package v2
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/asyncapi/event-gateway/asyncapi"
 	"github.com/asyncapi/event-gateway/proxy"
@@ -18,23 +19,32 @@ func FromDocJSONSchemaMessageValidator(doc asyncapi.Document) (proxy.MessageVali
 				continue
 			}
 
-			// Assuming there is only one message per operation as per Asyncapi 2.x.x.
-			// See https://github.com/asyncapi/event-gateway/issues/10
-			if len(o.Messages()) > 1 {
-				return nil, fmt.Errorf("can not generate message validation for operation %s. Reason: the operation has more than one message and we can't correlate which one is it", o.ID())
-			}
-
 			if len(o.Messages()) == 0 {
 				return nil, fmt.Errorf("can not generate message validation for operation %s. Reason:. Operation has no message. This is totally unexpected", o.ID())
 			}
 
-			// Assuming there is only one message per operation and one operation of a particular type per Channel.
-			// See https://github.com/asyncapi/event-gateway/issues/10
-			msg := o.Messages()[0]
+			var payload asyncapi.Schema
+			var messageNames string
+			if len(o.Messages()) > 1 {
+				// Meaning message payload is a Schema containing several payloads as `oneOf`.
+				// Generating back just one Schema adding all payloads to oneOf field.
+				msgs := o.Messages()
+				oneOfSchemas := make([]asyncapi.Schema, len(msgs))
+				names := make([]string, len(msgs))
+				for i, msg := range msgs {
+					oneOfSchemas[i] = msg.Payload()
+					names[i] = msg.Name()
+				}
+				payload = &Schema{OneOfField: oneOfSchemas}
+				messageNames = strings.Join(names, ", ")
+			} else {
+				payload = o.Messages()[0].Payload()
+				messageNames = o.Messages()[0].Name()
+			}
 
-			raw, err := json.Marshal(msg.Payload())
+			raw, err := json.Marshal(payload)
 			if err != nil {
-				return nil, fmt.Errorf("error marshaling message payload for generating json schema for validation. Operation: %s, Message: %s", o.ID(), msg.Name())
+				return nil, fmt.Errorf("error marshaling message payload for generating json schema for validation. Operation: %s, Messages: %s", o.ID(), messageNames)
 			}
 
 			messageSchemas[c.ID()] = gojsonschema.NewBytesLoader(raw)

@@ -3,59 +3,96 @@ package v2
 import (
 	"testing"
 
+	"github.com/asyncapi/event-gateway/asyncapi"
+
 	"github.com/asyncapi/event-gateway/proxy"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFromDocJsonSchemaMessageValidator(t *testing.T) {
-	msg := &Message{
-		PayloadField: &Schema{
-			TypeField: "object",
-			PropertiesField: Schemas{
-				"AnIntergerField": &Schema{
-					Extendable:    Extendable{},
-					MaximumField:  refFloat64(10),
-					MinimumField:  refFloat64(3),
-					RequiredField: []string{"AnIntergerField"},
-					TypeField:     "number",
-				},
-			},
-		},
-	}
-	channel := NewChannel("test")
-	channel.Subscribe = NewSubscribeOperation(msg)
-
-	doc := Document{
-		Extendable: Extendable{},
-		ChannelsField: map[string]Channel{
-			"test": *channel,
-		},
-	}
-
 	tests := []struct {
 		name    string
 		valid   bool
+		schema  *Schema
 		payload []byte
 	}{
 		{
-			name:    "Valid payload",
+			name: "Valid payload",
+			schema: &Schema{
+				TypeField: "object",
+				PropertiesField: Schemas{
+					"AnIntergerField": &Schema{
+						MaximumField:  refFloat64(10),
+						MinimumField:  refFloat64(3),
+						RequiredField: []string{"AnIntergerField"},
+						TypeField:     "number",
+					},
+				},
+			},
 			payload: []byte(`{"AnIntergerField": 5}`),
 			valid:   true,
 		},
 		{
-			name:    "Invalid payload",
+			name: "Valid multiple payloads",
+			schema: &Schema{
+				TypeField: "object",
+				OneOfField: []asyncapi.Schema{
+					&Schema{
+						PropertiesField: Schemas{
+							"AnIntergerField": &Schema{
+								MaximumField:  refFloat64(10),
+								MinimumField:  refFloat64(3),
+								RequiredField: []string{"AnIntergerField"},
+								TypeField:     "number",
+							},
+						},
+						AdditionalPropertiesField: false,
+					},
+					&Schema{
+						PropertiesField: Schemas{
+							"AStringField": &Schema{
+								RequiredField: []string{"AStringField"},
+								TypeField:     "string",
+							},
+						},
+						AdditionalPropertiesField: false,
+					},
+				},
+			},
+			payload: []byte(`{"AStringField": "hello!"}`),
+			valid:   true,
+		},
+		{
+			name: "Invalid payload",
+			schema: &Schema{
+				TypeField: "object",
+				PropertiesField: Schemas{
+					"AnIntergerField": &Schema{
+						MaximumField:  refFloat64(10),
+						MinimumField:  refFloat64(3),
+						RequiredField: []string{"AnIntergerField"},
+						TypeField:     "number",
+					},
+				},
+			},
 			payload: []byte(`{"AnIntergerField": 1}`),
 			valid:   false,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			// Doc generation
+			channel := NewChannel(t.Name())
+			channel.Subscribe = NewSubscribeOperation(&Message{PayloadField: test.schema})
+			doc := Document{ChannelsField: map[string]Channel{t.Name(): *channel}}
+
+			// Test
 			validator, err := FromDocJSONSchemaMessageValidator(doc)
 			assert.NoError(t, err)
 
 			msg := &proxy.Message{
 				Context: proxy.MessageContext{
-					Channel: "test",
+					Channel: t.Name(),
 				},
 				Value: test.payload,
 			}
