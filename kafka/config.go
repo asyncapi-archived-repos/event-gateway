@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/pkg/errors"
 )
 
@@ -16,10 +18,18 @@ type ProxyConfig struct {
 	BrokersMapping     []string
 	DialAddressMapping []string
 	ExtraConfig        []string
+	MessageHandlers    []MessageHandler
 	Debug              bool
 }
 
 type Option func(*ProxyConfig) error
+
+func WithMessageHandlers(messageHandlers ...MessageHandler) Option {
+	return func(c *ProxyConfig) error {
+		c.MessageHandlers = append(c.MessageHandlers, messageHandlers...)
+		return nil
+	}
+}
 
 // WithDebug enables debug.
 func WithDebug() Option {
@@ -83,6 +93,10 @@ func (c *ProxyConfig) Validate() error {
 		if remoteHost == localHost && remotePort == localPort || (isLocalHost(remoteHost) && isLocalHost(localHost) && remotePort == localPort) {
 			return fmt.Errorf("broker and proxy can't listen to the same port on the same host. Broker is already listening at %s. Please configure a different listener port", v[0])
 		}
+	}
+
+	if len(c.MessageHandlers) == 0 {
+		logrus.Warn("There are no message handlers configured")
 	}
 
 	return nil

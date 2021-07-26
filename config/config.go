@@ -9,8 +9,21 @@ import (
 // App holds the config for the whole application.
 type App struct {
 	Debug       bool
-	AsyncAPIDoc []byte     `split_words:"true"`
-	KafkaProxy  KafkaProxy `split_words:"true"`
+	AsyncAPIDoc []byte      `split_words:"true"`
+	KafkaProxy  *KafkaProxy `split_words:"true"`
+}
+
+// Opt is a functional option used for configuring an App.
+type Opt func(*App)
+
+// NewApp creates a App config with defaults.
+func NewApp(opts ...Opt) *App {
+	c := &App{KafkaProxy: NewKafkaProxy()}
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	return c
 }
 
 // ProxyConfig creates a config struct for the Kafka Proxy.
