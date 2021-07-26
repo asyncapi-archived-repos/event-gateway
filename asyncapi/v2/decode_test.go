@@ -78,22 +78,35 @@ channels:
       summary: Inform about environmental lighting conditions for a particular streetlight.
       operationId: onLightMeasured
       message:
-        name: LightMeasured
-        payload:
-          type: object
-          properties:
-            id:
-              type: integer
-              minimum: 0
-              description: Id of the streetlight.
-            lumens:
-              type: integer
-              minimum: 0
-              description: Light intensity measured in lumens.
-            sentAt:
-              type: string
-              format: date-time
-              description: Date and time when the message was sent.`)
+        oneOf:
+          - $ref: '#/components/messages/lightMeasured'
+          - $ref: '#/components/messages/lightMeasured2'
+components:
+  messages:
+    lightMeasured:
+       name: LightMeasured
+       payload:
+         $ref: "#/components/schemas/lightMeasuredPayload"
+    lightMeasured2:
+       name: LightMeasured
+       payload:
+         $ref: "#/components/schemas/lightMeasuredPayload"
+  schemas:
+    lightMeasuredPayload:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 0
+          description: Id of the streetlight.
+        lumens:
+          type: integer
+          minimum: 0
+          description: Light intensity measured in lumens.
+        sentAt:
+          type: string
+          format: date-time
+          description: Date and time when the message was sent.`)
 
 	doc := new(Document)
 	require.NoError(t, Decode(raw, doc))
@@ -116,7 +129,7 @@ channels:
 
 	assert.Len(t, doc.ApplicationPublishableChannels(), 1)
 	assert.Len(t, doc.ApplicationPublishOperations(), 1)
-	assert.Len(t, doc.ApplicationPublishableMessages(), 1)
+	assert.Len(t, doc.ApplicationPublishableMessages(), 2)
 
 	assert.Empty(t, doc.ApplicationSubscribableChannels())
 	assert.Empty(t, doc.ApplicationSubscribeOperations())
@@ -124,7 +137,7 @@ channels:
 
 	assert.Len(t, doc.ClientSubscribableChannels(), 1)
 	assert.Len(t, doc.ClientSubscribeOperations(), 1)
-	assert.Len(t, doc.ClientSubscribableMessages(), 1)
+	assert.Len(t, doc.ClientSubscribableMessages(), 2)
 
 	assert.Empty(t, doc.ClientPublishableChannels())
 	assert.Empty(t, doc.ClientPublishOperations())
@@ -149,40 +162,43 @@ channels:
 	assert.Equal(t, "onLightMeasured", operations[0].ID())
 
 	messages := operations[0].Messages()
-	require.Len(t, messages, 1)
+	require.Len(t, messages, 2)
 
-	assert.Equal(t, "LightMeasured", messages[0].Name())
-	assert.False(t, messages[0].HasSummary())
-	assert.False(t, messages[0].HasDescription())
-	assert.False(t, messages[0].HasTitle())
-	assert.Empty(t, messages[0].ContentType())
+	for i := 0; i < 2; i++ {
+		msg := messages[i]
+		assert.Equal(t, "LightMeasured", msg.Name())
+		assert.False(t, msg.HasSummary())
+		assert.False(t, msg.HasDescription())
+		assert.False(t, msg.HasTitle())
+		assert.Empty(t, msg.ContentType())
 
-	payload := messages[0].Payload()
-	require.NotNil(t, payload)
+		payload := msg.Payload()
+		require.NotNil(t, payload)
 
-	assert.Equal(t, []string{"object"}, payload.Type())
-	properties := payload.Properties()
-	require.Len(t, properties, 3)
+		assert.Equal(t, []string{"object"}, payload.Type())
+		properties := payload.Properties()
+		require.Len(t, properties, 3)
 
-	expectedProperties := map[string]asyncapi.Schema{
-		"id": &Schema{
-			DescriptionField: "Id of the streetlight.",
-			MinimumField:     refFloat64(0),
-			TypeField:        "integer",
-		},
-		"lumens": &Schema{
-			DescriptionField: "Light intensity measured in lumens.",
-			MinimumField:     refFloat64(0),
-			TypeField:        "integer",
-		},
-		"sentAt": &Schema{
-			DescriptionField: "Date and time when the message was sent.",
-			FormatField:      "date-time",
-			TypeField:        "string",
-		},
+		expectedProperties := map[string]asyncapi.Schema{
+			"id": &Schema{
+				DescriptionField: "Id of the streetlight.",
+				MinimumField:     refFloat64(0),
+				TypeField:        "integer",
+			},
+			"lumens": &Schema{
+				DescriptionField: "Light intensity measured in lumens.",
+				MinimumField:     refFloat64(0),
+				TypeField:        "integer",
+			},
+			"sentAt": &Schema{
+				DescriptionField: "Date and time when the message was sent.",
+				FormatField:      "date-time",
+				TypeField:        "string",
+			},
+		}
+
+		assert.Equal(t, expectedProperties, properties)
 	}
-
-	assert.Equal(t, expectedProperties, properties)
 }
 
 func refFloat64(v float64) *float64 {

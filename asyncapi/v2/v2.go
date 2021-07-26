@@ -258,8 +258,8 @@ type SubscribeOperation struct {
 }
 
 // NewSubscribeOperation creates a new SubscribeOperation. Useful for testing.
-func NewSubscribeOperation(msg *Message) *SubscribeOperation {
-	return &SubscribeOperation{Operation: *NewOperation(OperationTypeSubscribe, msg)}
+func NewSubscribeOperation(msgs ...*Message) *SubscribeOperation {
+	return &SubscribeOperation{Operation: *NewOperation(OperationTypeSubscribe, msgs...)}
 }
 
 func (o SubscribeOperation) MapStructureDefaults() map[string]interface{} {
@@ -269,8 +269,8 @@ func (o SubscribeOperation) MapStructureDefaults() map[string]interface{} {
 }
 
 // NewPublishOperation creates a new PublishOperation. Useful for testing.
-func NewPublishOperation(msg *Message) *PublishOperation {
-	return &PublishOperation{Operation: *NewOperation(OperationTypePublish, msg)}
+func NewPublishOperation(msgs ...*Message) *PublishOperation {
+	return &PublishOperation{Operation: *NewOperation(OperationTypePublish, msgs...)}
 }
 
 type PublishOperation struct {
@@ -284,14 +284,16 @@ func (o PublishOperation) MapStructureDefaults() map[string]interface{} {
 }
 
 // NewOperation creates a new Operation. Useful for testing.
-func NewOperation(operationType asyncapi.OperationType, msg *Message) *Operation {
+func NewOperation(operationType asyncapi.OperationType, msgs ...*Message) *Operation {
 	op := &Operation{
 		OperationType: operationType,
 	}
 
-	if msg != nil {
-		op.MessageField = msg
+	if len(msgs) == 0 {
+		return op
 	}
+
+	op.MessageField = *NewMessages(msgs)
 
 	return op
 }
@@ -300,7 +302,7 @@ type Operation struct {
 	Extendable
 	Describable      `mapstructure:",squash"`
 	OperationIDField string                 `mapstructure:"operationId"`
-	MessageField     *Message               `mapstructure:"message"`
+	MessageField     Messages               `mapstructure:"message"`
 	OperationType    asyncapi.OperationType `mapstructure:"operationType"` // set by hook
 	SummaryField     string                 `mapstructure:"summary"`
 }
@@ -326,23 +328,13 @@ func (o Operation) IsClientSubscribing() bool {
 }
 
 func (o Operation) Messages() []asyncapi.Message {
-	if o.MessageField != nil {
-		if len(o.MessageField.Payload().OneOf()) == 0 {
-			return []asyncapi.Message{o.MessageField}
-		}
+	msgs := o.MessageField.Messages()
 
-		var msgs []asyncapi.Message
-		for _, payload := range o.MessageField.Payload().OneOf() {
-			p := payload.(*Schema)
-			msgs = append(msgs, Message{
-				PayloadField: p,
-			})
-		}
-
-		return msgs
+	convertedMsgs := make([]asyncapi.Message, len(msgs)) // Go lack of covariance :/
+	for i, m := range msgs {
+		convertedMsgs[i] = m
 	}
-
-	return nil
+	return convertedMsgs
 }
 
 func (o Operation) Type() asyncapi.OperationType {
@@ -356,6 +348,30 @@ func (o Operation) Summary() string {
 
 func (o Operation) HasSummary() bool {
 	return o.SummaryField != ""
+}
+
+// Messages is a variadic type for Message object, which can be either one message or oneOf.
+// See https://www.asyncapi.com/docs/specifications/v2.0.0#operationObject.
+type Messages struct {
+	Message    `mapstructure:",squash"`
+	OneOfField []*Message `mapstructure:"oneOf"`
+}
+
+func (m *Messages) Messages() []*Message {
+	if len(m.OneOfField) > 0 {
+		return m.OneOfField
+	}
+
+	return []*Message{&m.Message}
+}
+
+// NewMessages creates Messages.
+func NewMessages(msgs []*Message) *Messages {
+	if len(msgs) == 1 {
+		return &Messages{Message: *msgs[0]}
+	}
+
+	return &Messages{OneOfField: msgs}
 }
 
 type Message struct {

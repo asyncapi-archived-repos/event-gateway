@@ -3,52 +3,33 @@ package v2
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/asyncapi/event-gateway/asyncapi"
+
 	"github.com/stretchr/testify/require"
 
-	"github.com/asyncapi/event-gateway/asyncapi"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestMessage_OneOfPayload_MultipleMessages(t *testing.T) {
-	oneOfSchemas := []asyncapi.Schema{
-		&Schema{
-			PropertiesField: map[string]*Schema{
-				"schemaOnefieldOne": {},
-				"schemaOnefieldTwo": {},
-			},
-		},
-		&Schema{
-			PropertiesField: map[string]*Schema{
-				"schemaTwofieldOne": {},
-				"schemaTWofieldTwo": {},
-			},
-		},
-	}
-	msg := &Message{
-		PayloadField: &Schema{
-			OneOfField: oneOfSchemas,
-		},
+func TestMessage_OneOf(t *testing.T) {
+	expectedMessages := []*Message{
+		generateTestMessage(),
+		generateTestMessage(),
+		generateTestMessage(),
 	}
 
-	msgs := NewSubscribeOperation(msg).Messages()
-	require.Len(t, msgs, 2)
-	assert.Equal(t, oneOfSchemas[0], msgs[0].Payload())
-	assert.Equal(t, oneOfSchemas[1], msgs[1].Payload())
+	op := NewSubscribeOperation(expectedMessages...)
+	assert.IsType(t, Messages{}, op.MessageField)
+	assert.EqualValues(t, []asyncapi.Message{expectedMessages[0], expectedMessages[1], expectedMessages[2]}, op.Messages()) // Go lack of covariance :/
 }
 
 func TestMessage_PlainPayload_OneMessage(t *testing.T) {
-	msg := &Message{
-		PayloadField: &Schema{
-			PropertiesField: map[string]*Schema{
-				"schemaFieldOne":      {},
-				"schemaFieldfieldTwo": {},
-			},
-		},
-	}
+	expectedMsg := generateTestMessage()
 
-	msgs := NewSubscribeOperation(msg).Messages()
+	op := NewSubscribeOperation(expectedMsg)
+	assert.IsType(t, Messages{}, op.MessageField)
+	msgs := op.Messages()
 	require.Len(t, msgs, 1)
-	assert.Equal(t, msg, msgs[0])
+	assert.Equal(t, expectedMsg, msgs[0])
 }
 
 func TestSchema_AdditionalProperties(t *testing.T) {
@@ -81,4 +62,17 @@ func TestSchema_AdditionalItems(t *testing.T) {
 	assert.False(t, schema.AdditionalItems().IsFalse())
 	assert.True(t, schema.AdditionalItems().IsSchema())
 	assert.Equal(t, field, schema.AdditionalItems().Schema())
+}
+
+func generateTestMessage() *Message {
+	return &Message{
+		PayloadField: &Schema{
+			TypeField: "object",
+			PropertiesField: Schemas{
+				"fieldOne": &Schema{
+					TypeField: "string",
+				},
+			},
+		},
+	}
 }
