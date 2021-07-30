@@ -8,8 +8,9 @@ import (
 )
 
 func TestValidationError_String(t *testing.T) {
-	validationErr := generateTestValidationError(nil)
-	assert.Equal(t, "AnIntegerField: Invalid type. Expected: integer, given: string | AStringField: Invalid type. Expected: string, given: integer", validationErr.String())
+	expectedMessage := generateTestMessage()
+	validationErr := generateTestValidationError(expectedMessage)
+	assert.Equal(t, `Errors validating message on channel "test": AnIntegerField: Invalid type. Expected: integer, given: string | AStringField: Invalid type. Expected: string, given: integer`, validationErr.String())
 }
 
 func TestNotifyOnValidationError(t *testing.T) {
