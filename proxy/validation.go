@@ -39,7 +39,7 @@ func (v ValidationError) String() string {
 		errs[i] = err.String()
 	}
 
-	return strings.Join(errs, " | ")
+	return fmt.Sprintf("Errors validating message on channel %q: %s", v.Msg.Context.Channel, strings.Join(errs, " | "))
 }
 
 // ValidationErrorNotifier notifies whenever a ValidationError happens.
