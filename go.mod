@@ -6,11 +6,14 @@ require (
 	github.com/asyncapi/parser-go v0.3.1-0.20210701222435-43ab3e4b47d6
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21
 	github.com/frankban/quicktest v1.11.3 // indirect
+	github.com/go-chi/chi/v5 v5.0.3
+	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/grepplabs/kafka-proxy v0.2.8
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/klauspost/compress v1.12.2
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.1
+	github.com/olahol/melody v0.0.0-20180227134253-7bd65910e5ab
 	github.com/pierrec/lz4 v2.6.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1

@@ -138,6 +138,7 @@ func (h *produceRequestHandler) extractMessages(req protocol.ProduceRequest) []M
 						Context: Context{
 							Topic: topic,
 						},
+						Key:     r.Key,
 						Value:   r.Value,
 						Headers: r.Headers,
 					})
@@ -149,8 +150,8 @@ func (h *produceRequestHandler) extractMessages(req protocol.ProduceRequest) []M
 						Context: Context{
 							Topic: topic,
 						},
-						Value: mb.Msg.Value,
 						Key:   mb.Msg.Key,
+						Value: mb.Msg.Value,
 					})
 				}
 			}
