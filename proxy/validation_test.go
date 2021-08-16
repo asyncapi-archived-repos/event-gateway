@@ -12,7 +12,7 @@ func TestNotifyOnValidationError(t *testing.T) {
 	expectedMessage := generateTestMessage()
 	validator := func(msg *Message) (*ValidationError, error) {
 		assert.Equal(t, expectedMessage, msg)
-		return NewValidationError(msg, time.Now()), nil
+		return NewValidationError(msg, time.Now(), "This is a validation error"), nil
 	}
 
 	var notified bool
