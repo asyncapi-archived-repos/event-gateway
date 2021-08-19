@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -50,7 +50,6 @@ func main() {
 	})
 
 	r := chi.NewRouter()
-	r.Get("/", http.FileServer(http.Dir("./web/static")).ServeHTTP)
 	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
 		_ = m.HandleRequest(w, r)
 	})
@@ -70,17 +69,6 @@ func main() {
 }
 
 func handleValidationErrors(ctx context.Context, validationErrChan chan *proxy.ValidationError, m *melody.Melody) {
-	// Using logrus for handling ws output text.
-	noopLogger := logrus.New()
-	noopLogger.Out = io.Discard
-
-	// Using logrus formatter for ws output text.
-	f := logrus.TextFormatter{
-		ForceQuote:      true,
-		FullTimestamp:   true,
-		TimestampFormat: time.RFC3339,
-	}
-
 	for {
 		select {
 		case validationErr, ok := <-validationErrChan:
@@ -88,17 +76,15 @@ func handleValidationErrors(ctx context.Context, validationErrChan chan *proxy.V
 				return
 			}
 
-			logrus.WithField("validation_errors", validationErr.String()).Debug("error validating message")
-			entry := noopLogger.WithFields(logrus.Fields{
-				"channel":           validationErr.Msg.Context.Channel,
-				"key":               string(validationErr.Msg.Key),
-				"headers":           validationErr.Msg.Headers,
-				"validation_errors": validationErr.Result.Errors(),
-			}).WithTime(time.Now())
-			entry.Level = logrus.InfoLevel
+			content, err := json.Marshal(validationErr)
+			if err != nil {
+				logrus.WithError(err).Error("error encoding validationError")
+				content = []byte(`For some reason, this validation error can't be seen. Please drop us an issue on github.'`)
+			}
 
-			txt, _ := f.Format(entry)
-			if err := m.Broadcast(txt); err != nil {
+			logrus.WithField("validation_error", string(content)).Debug("a message validation error has been found")
+
+			if err := m.Broadcast(content); err != nil {
 				logrus.WithError(err).Error("error broadcasting message to all ws sessions")
 			}
 		case <-ctx.Done():

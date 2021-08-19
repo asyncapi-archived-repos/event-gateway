@@ -2,7 +2,7 @@ package proxy
 
 import (
 	"fmt"
-	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/xeipuuv/gojsonschema"
@@ -10,36 +10,33 @@ import (
 
 // Message represents a message flowing through the wire. For example, a Kafka message.
 type Message struct {
-	Context MessageContext
-	Key     []byte
-	Value   []byte
-	Headers []MessageHeader
+	Context MessageContext  `json:"context"`
+	Key     []byte          `json:"key,omitempty"`
+	Value   []byte          `json:"value,omitempty"`
+	Headers []MessageHeader `json:"headers,omitempty"`
 }
 
 // MessageContext contains information about the context that surrounds a message.
 type MessageContext struct {
-	Channel string
+	Channel string `json:"channel"`
 }
 
 // MessageHeader represents a header of a message, if there are any.
 type MessageHeader struct {
-	Key   []byte
-	Value []byte
+	Key   []byte `json:"key"`
+	Value []byte `json:"value"`
 }
 
 // ValidationError represents a message validation error.
 type ValidationError struct {
-	Msg    *Message
-	Result *gojsonschema.Result
+	Timestamp time.Time `json:"ts"`
+	Msg       *Message  `json:"msg"`
+	Errors    []string  `json:"errors"`
 }
 
-func (v ValidationError) String() string {
-	errs := make([]string, len(v.Result.Errors()))
-	for i, err := range v.Result.Errors() {
-		errs[i] = err.String()
-	}
-
-	return fmt.Sprintf("Errors validating message on channel %q: %s", v.Msg.Context.Channel, strings.Join(errs, " | "))
+// NewValidationError creates a new ValidationError.
+func NewValidationError(msg *Message, ts time.Time, errors ...string) *ValidationError {
+	return &ValidationError{Msg: msg, Timestamp: ts, Errors: errors}
 }
 
 // ValidationErrorNotifier notifies whenever a ValidationError happens.
@@ -95,10 +92,12 @@ func JSONSchemaMessageValidator(messageSchemas map[string]gojsonschema.JSONLoade
 		}
 
 		if !result.Valid() {
-			return &ValidationError{
-				Msg:    msg,
-				Result: result,
-			}, nil
+			errs := make([]string, len(result.Errors()))
+			for i := 0; i < len(result.Errors()); i++ {
+				errs[i] = result.Errors()[i].String()
+			}
+
+			return NewValidationError(msg, time.Now(), errs...), nil
 		}
 
 		return nil, nil

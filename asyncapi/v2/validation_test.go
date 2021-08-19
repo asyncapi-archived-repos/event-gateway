@@ -103,7 +103,7 @@ func TestFromDocJsonSchemaMessageValidator(t *testing.T) {
 				assert.Nil(t, validationErr)
 			} else {
 				assert.NotNil(t, validationErr)
-				assert.False(t, validationErr.Result.Valid())
+				assert.NotEmpty(t, validationErr.Errors)
 			}
 		})
 	}
