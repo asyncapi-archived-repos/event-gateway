@@ -54,7 +54,6 @@ func (c *KafkaProxy) ProxyConfig(doc []byte, debug bool, messageHandlers ...kafk
 
 	var kafkaProxyConfig *kafka.ProxyConfig
 	var err error
-
 	if len(doc) > 0 {
 		kafkaProxyConfig, err = c.configFromDoc(doc, kafka.WithExtra(c.ExtraFlags.Values))
 	} else {
