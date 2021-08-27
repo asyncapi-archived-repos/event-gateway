@@ -54,8 +54,9 @@ func (c *KafkaProxy) ProxyConfig(doc []byte, debug bool, messageHandlers ...kafk
 
 	var kafkaProxyConfig *kafka.ProxyConfig
 	var err error
+
 	if len(doc) > 0 {
-		kafkaProxyConfig, err = c.configFromDoc(doc)
+		kafkaProxyConfig, err = c.configFromDoc(doc, kafka.WithExtra(c.ExtraFlags.Values))
 	} else {
 		kafkaProxyConfig, err = kafka.NewProxyConfig(c.BrokersMapping.Values, kafka.WithDialAddressMapping(c.BrokersDialMapping.Values), kafka.WithExtra(c.ExtraFlags.Values))
 	}
@@ -70,13 +71,12 @@ func (c *KafkaProxy) ProxyConfig(doc []byte, debug bool, messageHandlers ...kafk
 	return kafkaProxyConfig, nil
 }
 
-func (c *KafkaProxy) configFromDoc(d []byte) (*kafka.ProxyConfig, error) {
+func (c *KafkaProxy) configFromDoc(d []byte, opts ...kafka.Option) (*kafka.ProxyConfig, error) {
 	doc := new(v2.Document)
 	if err := v2.Decode(d, doc); err != nil {
 		return nil, errors.Wrap(err, "error decoding AsyncAPI json doc to Document struct")
 	}
 
-	var opts []kafka.Option
 	if c.MessageValidation.Enabled {
 		validator, err := v2.FromDocJSONSchemaMessageValidator(doc)
 		if err != nil {

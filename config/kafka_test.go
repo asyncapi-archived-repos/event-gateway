@@ -21,10 +21,13 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 			name: "Valid config. Only one broker from doc",
 			config: &KafkaProxy{
 				BrokerFromServer: "test",
+				// Also testing extra flags.
+				ExtraFlags: pipeSeparatedValues{Values: []string{"arg1=arg1value", "arg2=arg2value"}},
 			},
 			expectedProxyConfig: func(_ *testing.T, _ *kafka.ProxyConfig) *kafka.ProxyConfig {
 				return &kafka.ProxyConfig{
 					BrokersMapping: []string{"broker.mybrokers.org:9092,:9092"},
+					ExtraConfig:    []string{"arg1=arg1value", "arg2=arg2value"},
 				}
 			},
 			doc: []byte(`testdata/simple-kafka.yaml`),
