@@ -19,11 +19,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const configPrefix = "eventgateway"
+
 func main() {
 	validationErrChan := make(chan *proxy.ValidationError)
 	c := config.NewApp(config.NotifyValidationErrorOnChan(validationErrChan))
 
-	if err := envconfig.Process("eventgateway", c); err != nil {
+	if err := envconfig.Process(configPrefix, c); err != nil {
+		_ = envconfig.Usage(configPrefix, c)
 		logrus.WithError(err).Fatal()
 	}
 
@@ -33,11 +36,13 @@ func main() {
 
 	kafkaProxyConfig, err := c.ProxyConfig()
 	if err != nil {
+		_ = envconfig.Usage(configPrefix, c)
 		logrus.WithError(err).Fatal()
 	}
 
 	kafkaProxy, err := kafka.NewProxy(kafkaProxyConfig)
 	if err != nil {
+		_ = envconfig.Usage(configPrefix, c)
 		logrus.WithError(err).Fatal()
 	}
 

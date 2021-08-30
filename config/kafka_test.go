@@ -48,6 +48,28 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 			doc: []byte(`testdata/simple-kafka.yaml`),
 		},
 		{
+			name: "Valid config. Only one broker + Override listener port from doc",
+			config: &KafkaProxy{
+				BrokerFromServer: "test",
+			},
+			expectedProxyConfig: func(t *testing.T, c *kafka.ProxyConfig) *kafka.ProxyConfig {
+				return &kafka.ProxyConfig{
+					BrokersMapping: []string{"broker.mybrokers.org:9092,:28002"},
+				}
+			},
+			doc: []byte(`testdata/override-port-kafka.yaml`),
+		},
+		{
+			name:   "Valid config. All brokers + Override listener port from doc",
+			config: &KafkaProxy{},
+			expectedProxyConfig: func(t *testing.T, c *kafka.ProxyConfig) *kafka.ProxyConfig {
+				return &kafka.ProxyConfig{
+					BrokersMapping: []string{"broker.mybrokers.org:9092,:28002"},
+				}
+			},
+			doc: []byte(`testdata/override-port-kafka.yaml`),
+		},
+		{
 			name: "Valid config. Only broker mapping",
 			config: &KafkaProxy{
 				BrokersMapping: pipeSeparatedValues{Values: []string{"broker.mybrokers.org:9092,:9092"}},
