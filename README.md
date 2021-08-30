@@ -61,7 +61,6 @@ The **Event Gateway** can extend its functionality via middlewares written by th
 A catalog of middlewares made by the community is also available.
 
 # Roadmap
-
 The idea is to keep iterating and support all the protocols AsyncAPI supports through [bindings](https://github.com/asyncapi/bindings).  
 However, we reduced the scope for the first versions, so we can give support to the most used protocols. 
 
