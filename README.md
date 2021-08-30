@@ -64,11 +64,7 @@ A catalog of middlewares made by the community is also available.
 The idea is to keep iterating and support all the protocols AsyncAPI supports through [bindings](https://github.com/asyncapi/bindings).  
 However, we reduced the scope for the first versions, so we can give support to the most used protocols. 
 
-The list, which can be subject to change, is:
-
-- [Kafka](https://kafka.apache.org) - Under development.
-- [MQTT](https://mqtt.org)
-- [AMQP](https://www.amqp.org)
+For the first version, only [Kafka](https://kafka.apache.org) protocol will be supported 
 
 # Getting Started
 
