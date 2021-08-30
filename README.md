@@ -88,4 +88,4 @@ The Minimum required version of Go is set in [go.mod](go.mod) file.
 2. Run `make build`. The binary will be placed at `bin/out/event-gateway`.
 
 ## Configuration
-Please refer to [/config](/config).
+Please refer to [/docs/config](/docs/config).
