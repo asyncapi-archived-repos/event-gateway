@@ -15,6 +15,17 @@ By reading config from `servers`, the Kafka proxy is configured by default as it
   - Local port can also be specified via `x-eventgateway-listener`, for example: ` x-eventgateway-listener: 28002`.
 - In case `x-eventgateway-dial-mapping` extension is present, is used in the same form as the `EVENTGATEWAY_KAFKA_PROXY_BROKERS_DIAL_MAPPING` environment variable.
 
+#### Example
+```yaml
+# ...
+servers:
+  test:
+    url: broker.mybrokers.org:9092
+    protocol: kafka
+    x-eventgateway-listener: 28002 # optional. 9092 will be used instead if missing.
+    x-eventgateway-dial-mapping: 'broker.mybrokers.org:9092,private-broker.mybrokers.org:9092' # optional. 
+# ...
+```
 
 ### From environment variables
 | Environment variable                                | Type    | Description                                                                                                                                                                                                                                          | Default | Required                          | examples                                                                                                                                                                                                     |
