@@ -90,6 +90,3 @@ The Minimum required version of Go is set in [go.mod](go.mod) file.
 
 ## Configuration
 Please refer to [/config](/config).
-
-
-
