@@ -16,7 +16,9 @@
   <em>The Event Gateway solution by excellence</em>
 </p>
 
-# Overview
+> :warning: Still under development, it didn't reach v1.0.0 and therefore is not suitable for production use yet.
+
+# Overview  
 
 AsyncAPI **Event Gateway** (name is subject to change) is the Event Gateway solution by excellence.
 
@@ -57,3 +59,37 @@ It could even be an automated task whenever you update your specs.
 ## 5. Extensible
 The **Event Gateway** can extend its functionality via middlewares written by the community.
 A catalog of middlewares made by the community is also available.
+
+# Roadmap
+
+The idea is to keep iterating and support all the protocols AsyncAPI supports through [bindings](https://github.com/asyncapi/bindings).  
+However, we reduced the scope for the first versions, so we can give support to the most used protocols. 
+
+The list, which can be subject to change, is:
+
+- [Kafka](https://kafka.apache.org) - Under development.
+- [MQTT](https://mqtt.org)
+- [AMQP](https://www.amqp.org)
+
+# Getting Started
+
+## Installation
+
+### Install from Docker
+TBD
+
+### Install from pre-compiled binaries
+TBD
+
+### Install from source
+This project is built with [Go](https://golang.org/), and it uses [Go Modules](https://golang.org/ref/mod) for managing dependencies.  
+The Minimum required version of Go is set in [go.mod](go.mod) file.
+
+1. Clone this repository.
+2. Run `make build`. The binary will be placed at `bin/out/event-gateway`.
+
+## Configuration
+Please refer to [/config](/config).
+
+
+
