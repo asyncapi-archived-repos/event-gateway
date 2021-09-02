@@ -1,7 +1,4 @@
 <h5 align="center">
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-5-orange.svg?style=flat-square)](#contributors-)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
   <br>
   <a href="https://github.com/asyncapi/event-gateway/issues/new?assignees=&labels=use+case&template=use_case.md&title=%5BUSECASE%5D+">
     <img src="https://dummyimage.com/1000x80/0e9f6f/ffffff.png&text=We+are+looking+for+use+cases!+Please+share+yours+by+clicking+here" alt="Share your use case with us">
@@ -20,6 +17,10 @@
 </p>
 
 > :warning: Still under development, it didn't reach v1.0.0 and therefore is not suitable for production use yet.
+
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-5-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 # Overview  
 
