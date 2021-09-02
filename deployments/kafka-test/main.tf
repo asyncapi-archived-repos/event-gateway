@@ -1,31 +1,3 @@
-variable "aiven_api_token" {
-  type = string
-}
-
-variable "aiven_project_name" {
-  type = string
-}
-
-variable "aiven_service_name" {
-  type = string
-}
-
-variable "aiven_service_plan" {
-  type = string
-}
-
-variable "aiven_kafka_cloud_name" {
-  type = string
-}
-
-variable "aiven_kafka_topic_name" {
-  type = string
-}
-
-variable "aiven_kafka_username" {
-  type = string
-}
-
 terraform {
   required_providers {
     aiven = {
@@ -62,10 +34,10 @@ resource "aiven_kafka_topic" "asyncapi-event-gateway-kafka-topic" {
   project      = data.aiven_project.asyncapi-project.project
   service_name = aiven_kafka.asyncapi-event-gateway-kafka-service.service_name
   topic_name   = var.aiven_kafka_topic_name
-  partitions   = 1
-  replication  = 2
+  partitions   = var.aiven_kafka_topic_partitions
+  replication  = var.aiven_kafka_topic_replication
   config {
-    retention_ms = 60000
+    retention_ms = var.aiven_kafka_topic_retention_ms
   }
 }
 
