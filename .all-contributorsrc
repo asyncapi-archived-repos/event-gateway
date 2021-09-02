@@ -1,0 +1,69 @@
+{
+  "projectName": "event-gateway",
+  "projectOwner": "asyncapi",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "contributors": [
+    {
+      "login": "smoya",
+      "name": "Sergio Moya",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1083296?v=4",
+      "profile": "https://github.com/smoya",
+      "contributions": [
+        "question",
+        "bug",
+        "code",
+        "doc",
+        "ideas",
+        "infra",
+        "maintenance",
+        "projectManagement",
+        "research",
+        "review",
+        "test"
+      ]
+    },
+    {
+      "login": "fmvilas",
+      "name": "Fran Méndez",
+      "avatar_url": "https://avatars.githubusercontent.com/u/242119?v=4",
+      "profile": "http://www.fmvilas.com/",
+      "contributions": [
+        "ideas",
+        "review"
+      ]
+    },
+    {
+      "login": "magicmatatjahu",
+      "name": "Maciej Urbańczyk",
+      "avatar_url": "https://avatars.githubusercontent.com/u/20404945?v=4",
+      "profile": "https://github.com/magicmatatjahu",
+      "contributions": [
+        "review"
+      ]
+    },
+    {
+      "login": "derberg",
+      "name": "Lukasz Gornicki",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6995927?v=4",
+      "profile": "https://dev.to/derberg",
+      "contributions": [
+        "review"
+      ]
+    },
+    {
+      "login": "paulRbr",
+      "name": "Paul B.",
+      "avatar_url": "https://avatars.githubusercontent.com/u/904193?v=4",
+      "profile": "http://polr.fr/me",
+      "contributions": [
+        "review"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7
+}
