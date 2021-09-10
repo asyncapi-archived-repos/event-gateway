@@ -155,7 +155,7 @@ func extractAddressMappingFromServers(servers ...asyncapi.Server) (brokersMappin
 
 		brokersMapping = append(brokersMapping, fmt.Sprintf("%s,%s", s.URL(), listenAt))
 		if dialMapping := s.Extension(asyncapi.ExtensionEventGatewayDialMapping); dialMapping != nil {
-			dialAddressMapping = append(dialAddressMapping, fmt.Sprintf("%s,%s", s.URL(), dialMapping))
+			dialAddressMapping = append(dialAddressMapping, strings.Split(dialMapping.(string), "|")...)
 		}
 	}
 

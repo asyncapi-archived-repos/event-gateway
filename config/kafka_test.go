@@ -70,6 +70,17 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 			doc: []byte(`testdata/override-port-kafka.yaml`),
 		},
 		{
+			name:   "Valid config. All brokers + multiple dial mapping",
+			config: &KafkaProxy{},
+			expectedProxyConfig: func(t *testing.T, c *kafka.ProxyConfig) *kafka.ProxyConfig {
+				return &kafka.ProxyConfig{
+					BrokersMapping:     []string{"broker.mybrokers.org:9092,:9092"},
+					DialAddressMapping: []string{"0.0.0.0:28002,kafkaproxy.myapp.org:28002", "0.0.0.0:28003,kafkaproxy.myapp.org:28003"},
+				}
+			},
+			doc: []byte(`testdata/dial-mapping-kafka.yaml`),
+		},
+		{
 			name: "Valid config. Only broker mapping",
 			config: &KafkaProxy{
 				BrokersMapping: pipeSeparatedValues{Values: []string{"broker.mybrokers.org:9092,:9092"}},
