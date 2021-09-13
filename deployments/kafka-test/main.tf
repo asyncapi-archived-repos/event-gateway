@@ -23,7 +23,7 @@ resource "aiven_kafka" "asyncapi-event-gateway-kafka-service" {
   service_name            = var.aiven_service_name
   maintenance_window_dow  = "friday"
   maintenance_window_time = "07:00:00"
-  termination_protection = true
+  termination_protection  = true
   kafka_user_config {
     kafka_version = "2.7"
   }
@@ -31,13 +31,14 @@ resource "aiven_kafka" "asyncapi-event-gateway-kafka-service" {
 
 # Topic for Kafka
 resource "aiven_kafka_topic" "asyncapi-event-gateway-kafka-topic" {
+  for_each     = var.aiven_kafka_topics
   project      = data.aiven_project.asyncapi-project.project
   service_name = aiven_kafka.asyncapi-event-gateway-kafka-service.service_name
-  topic_name   = var.aiven_kafka_topic_name
-  partitions   = var.aiven_kafka_topic_partitions
-  replication  = var.aiven_kafka_topic_replication
+  topic_name   = each.key
+  partitions   = var.aiven_kafka_topics_partitions
+  replication  = var.aiven_kafka_topics_replication
   config {
-    retention_ms = var.aiven_kafka_topic_retention_ms
+    retention_ms = var.aiven_kafka_topics_retention_ms
   }
 }
 
@@ -50,18 +51,20 @@ resource "aiven_service_user" "asyncapi-event-gateway-kafka-user" {
 
 # ACL for Kafka
 resource "aiven_kafka_acl" "asyncapi-event-gateway-read-acl" {
+  for_each     = aiven_kafka_topic.asyncapi-event-gateway-kafka-topic
   project      = data.aiven_project.asyncapi-project.project
   service_name = aiven_kafka.asyncapi-event-gateway-kafka-service.service_name
   username     = aiven_service_user.asyncapi-event-gateway-kafka-user.username
   permission   = "read"
-  topic        = aiven_kafka_topic.asyncapi-event-gateway-kafka-topic.topic_name
+  topic        = each.value.topic_name
 }
 
 # ACL for Kafka
 resource "aiven_kafka_acl" "asyncapi-event-gateway-write-acl" {
+  for_each     = aiven_kafka_topic.asyncapi-event-gateway-kafka-topic
   project      = data.aiven_project.asyncapi-project.project
   service_name = aiven_kafka.asyncapi-event-gateway-kafka-service.service_name
   username     = aiven_service_user.asyncapi-event-gateway-kafka-user.username
   permission   = "write"
-  topic        = aiven_kafka_topic.asyncapi-event-gateway-kafka-topic.topic_name
+  topic        = each.value.topic_name
 }
