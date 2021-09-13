@@ -18,19 +18,19 @@ variable "aiven_kafka_cloud_name" {
   type = string
 }
 
-variable "aiven_kafka_topic_name" {
-  type = string
+variable "aiven_kafka_topics" {
+  type = set(string)
 }
 
-variable "aiven_kafka_topic_partitions" {
+variable "aiven_kafka_topics_partitions" {
   type = number
 }
 
-variable "aiven_kafka_topic_replication" {
+variable "aiven_kafka_topics_replication" {
   type = number
 }
 
-variable "aiven_kafka_topic_retention_ms" {
+variable "aiven_kafka_topics_retention_ms" {
   type = number
 }
 
