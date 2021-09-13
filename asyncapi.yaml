@@ -1,0 +1,94 @@
+asyncapi: '2.0.0' # Go parser does not support 2.1.0 at this moment.
+info:
+  title: AsyncAPI Event-Gateway demo API
+  version: 1.0.0-alpha
+  description: This API lets users interact with an instance of the [AsyncAPI Event-Gateway](https://github.com/asyncapi/event-gateway).
+defaultContentType: application/json
+servers:
+  asyncapi-event-gateway-demo:
+    url: 'event-gateway-demo.asyncapi.org:28002'
+    protocol: kafka
+    description: Asyncapi [Event-Gateway](https://github.com/asyncapi/event-gateway) demo Kafka proxy. Expects messages based on StreetLights tutorial available at https://www.asyncapi.com/docs/tutorials/streetlights.
+  asyncapi-event-gateway-demo-validation:
+    url: 'event-gateway-demo.asyncapi.org:5000/ws'
+    protocol: ws
+    description: Asyncapi [Event-Gateway](https://github.com/asyncapi/event-gateway) demo. Subscribe for Kafka proxy message validation errors.
+  asyncapi-kafka-test:
+    url: 'asyncapi-kafka-test-asyncapi-8f90.aivencloud.com:20472' # Kafka with 3 brokers.
+    protocol: kafka-secure
+    description: AsyncAPI Kafka test broker. Private.
+    x-eventgateway-listener: 0.0.0.0:28002 # Because of docker EXPOSE
+    x-eventgateway-dial-mapping: '0.0.0.0:28003,event-gateway-demo.asyncapi.org:28003|0.0.0.0:28004,event-gateway-demo.asyncapi.org:28004|0.0.0.0:28005,event-gateway-demo.asyncapi.org:28005'
+channels:
+  event-gateway-demo:
+    description: Demo Kafka topic for asyncapi-event-gateway-demo server. Users can send their events to this topic and see how message validation happens on the fly based on this right AsyncAPI file by connecting to `event-gateway-demo-validation-events` channel (`asyncapi-event-gateway-demo-validation` ws server).
+    subscribe:
+      message:
+        $ref: '#/components/messages/LightMeasured'
+  event-gateway-demo-validation-events: # To Websocket and/from Kafka topic. Public available
+    description: Validation errors are published here, so users can see how message validation happens on the fly based on this right AsyncAPI file.
+    publish:
+      message:
+        $ref: '#/components/messages/ValidationError'
+  event-gateway-demo-validation:
+    description: Validation errors are published to and consumed from it. Asyncapi Event-gateway is the only user of this channel. It can be consumed and exposed via `event-gateway-demo-validation-events` channel (asyncapi-event-gateway-demo-validation ws server).
+    publish:
+      message:
+        $ref: '#/components/messages/ValidationError'
+components:
+  messages:
+    ValidationError:
+      payload:
+        type: object
+        properties:
+          ts:
+            type: string
+            description: RFC-3339 date-time. Date and time when the message was validated.
+          errors:
+            type: array
+            description: Array of string. Validation errors.
+          msg:
+            $ref: '#/components/schemas/Message'
+      examples:
+        - payload:
+            ts: '2021-09-10T12:04:18:475203609Z'
+            errors: [ 'lumens: Invalid type. Expected: integer, given: string' ]
+            msg:
+              context:
+                channel: 'event-gateway-demo'
+              key: 'YXN5bmNhcGktd2FzLWhlcmU='
+              value: 'eyJsdW1lbnMiOiAid2hhdGV2ZXIifQ=='
+    LightMeasured:
+      payload:
+        type: object
+        properties:
+          id:
+            type: integer
+            minimum: 0
+            description: Id of the streetlight.
+          lumens:
+            type: integer
+            minimum: 0
+            description: Light intensity measured in lumens.
+          sentAt:
+            type: string
+            format: date-time
+            description: Date and time when the message was sent.
+  schemas:
+    Message:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Kafka message key (base64).
+        value:
+          type: string
+          description: Kafka message value (base64).
+        context:
+          $ref: '#/components/schemas/MessageContext'
+    MessageContext:
+      type: object
+      properties:
+        channel:
+          type: string
+          description: Name of the channel the message was published to.
