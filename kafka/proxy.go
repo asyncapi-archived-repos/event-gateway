@@ -46,6 +46,9 @@ func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 	// Yeah, not a good practice at all but I guess it's fine for now.
 	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(protocol.RequestAPIKeyProduce, NewProduceRequestHandler(c.MessageHandlers...))
 
+	// Setting some defaults.
+	_ = server.Server.Flags().Set("default-listener-ip", "0.0.0.0") // Binding to all local network interfaces. Needed for external calls.
+
 	if c.BrokersMapping == nil {
 		return nil, errors.New("Brokers mapping is required")
 	}
