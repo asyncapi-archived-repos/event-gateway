@@ -24,7 +24,7 @@ channels:
     subscribe:
       message:
         $ref: '#/components/messages/LightMeasured'
-  event-gateway-demo-validation-events: # To Websocket and/from Kafka topic. Public available
+  event-gateway-demo-validation-events:
     description: Validation errors are published here, so users can see how message validation happens on the fly based on this right AsyncAPI file.
     publish:
       message:
