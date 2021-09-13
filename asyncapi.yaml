@@ -17,8 +17,7 @@ servers:
     url: 'asyncapi-kafka-test-asyncapi-8f90.aivencloud.com:20472' # Kafka with 3 brokers.
     protocol: kafka-secure
     description: AsyncAPI Kafka test broker. Private.
-    x-eventgateway-listener: 0.0.0.0:28002 # Because of docker EXPOSE
-    x-eventgateway-dial-mapping: '0.0.0.0:28003,event-gateway-demo.asyncapi.org:28003|0.0.0.0:28004,event-gateway-demo.asyncapi.org:28004|0.0.0.0:28005,event-gateway-demo.asyncapi.org:28005'
+    x-eventgateway-dial-mapping: '0.0.0.0:20473,event-gateway-demo.asyncapi.org:20473|0.0.0.0:20474,event-gateway-demo.asyncapi.org:20474|0.0.0.0:20475,event-gateway-demo.asyncapi.org:20475' # Dynamic ports starts at 20473
 channels:
   event-gateway-demo:
     description: Demo Kafka topic for asyncapi-event-gateway-demo server. Users can send their events to this topic and see how message validation happens on the fly based on this right AsyncAPI file by connecting to `event-gateway-demo-validation-events` channel (`asyncapi-event-gateway-demo-validation` ws server).
