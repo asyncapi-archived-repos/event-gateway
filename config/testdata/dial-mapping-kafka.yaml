@@ -1,0 +1,22 @@
+asyncapi: '2.0.0'
+info:
+  title: Test
+  version: '1.0.0'
+servers:
+  test:
+    url: broker.mybrokers.org:9092
+    protocol: kafka
+    x-eventgateway-dial-mapping: "0.0.0.0:28002,kafkaproxy.myapp.org:28002|0.0.0.0:28003,kafkaproxy.myapp.org:28003"
+channels:
+  events:
+    publish:
+      operationId: onEvent
+      message:
+        name: event
+        payload:
+          type: object
+          properties:
+            id:
+              type: integer
+              minimum: 0
+              description: Id of the event.
