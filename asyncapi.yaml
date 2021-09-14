@@ -21,17 +21,17 @@ servers:
 channels:
   event-gateway-demo:
     description: Demo Kafka topic for asyncapi-event-gateway-demo server. Users can send their events to this topic and see how message validation happens on the fly based on this right AsyncAPI file by connecting to `event-gateway-demo-validation-events` channel (`asyncapi-event-gateway-demo-validation` ws server).
-    subscribe:
+    publish:
       message:
         $ref: '#/components/messages/LightMeasured'
   event-gateway-demo-validation-events:
     description: Validation errors are published here, so users can see how message validation happens on the fly based on this right AsyncAPI file.
-    publish:
+    subscribe:
       message:
         $ref: '#/components/messages/ValidationError'
   event-gateway-demo-validation:
     description: Validation errors are published to and consumed from it. Asyncapi Event-gateway is the only user of this channel. It can be consumed and exposed via `event-gateway-demo-validation-events` channel (asyncapi-event-gateway-demo-validation ws server).
-    publish:
+    subscribe:
       message:
         $ref: '#/components/messages/ValidationError'
 components:
