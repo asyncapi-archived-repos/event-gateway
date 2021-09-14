@@ -8,11 +8,11 @@ servers:
   asyncapi-event-gateway-demo:
     url: 'event-gateway-demo.asyncapi.org:28002'
     protocol: kafka
-    description: Asyncapi [Event-Gateway](https://github.com/asyncapi/event-gateway) demo Kafka proxy. Expects messages based on StreetLights tutorial available at https://www.asyncapi.com/docs/tutorials/streetlights.
+    description: AsyncAPI [Event-Gateway](https://github.com/asyncapi/event-gateway) demo Kafka proxy. Expects messages based on StreetLights tutorial available at https://www.asyncapi.com/docs/tutorials/streetlights.
   asyncapi-event-gateway-demo-validation:
     url: 'event-gateway-demo.asyncapi.org:5000/ws'
     protocol: ws
-    description: Asyncapi [Event-Gateway](https://github.com/asyncapi/event-gateway) demo. Subscribe for Kafka proxy message validation errors.
+    description: AsyncAPI [Event-Gateway](https://github.com/asyncapi/event-gateway) demo. Subscribe for Kafka proxy message validation errors.
   asyncapi-kafka-test:
     url: 'asyncapi-kafka-test-asyncapi-8f90.aivencloud.com:20472' # Kafka with 3 brokers.
     protocol: kafka-secure
@@ -30,7 +30,7 @@ channels:
       message:
         $ref: '#/components/messages/ValidationError'
   event-gateway-demo-validation:
-    description: Validation errors are published to and consumed from it. Asyncapi Event-gateway is the only user of this channel. It can be consumed and exposed via `event-gateway-demo-validation-events` channel (asyncapi-event-gateway-demo-validation ws server).
+    description: Validation errors are published to and consumed from it. AsyncAPI Event-gateway is the only user of this channel. It can be consumed and exposed via `event-gateway-demo-validation-events` channel (asyncapi-event-gateway-demo-validation ws server).
     subscribe:
       message:
         $ref: '#/components/messages/ValidationError'
