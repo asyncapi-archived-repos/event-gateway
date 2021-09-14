@@ -8,7 +8,7 @@ servers:
   asyncapi-event-gateway-demo:
     url: 'event-gateway-demo.asyncapi.org:28002'
     protocol: kafka
-    description: AsyncAPI [Event-Gateway](https://github.com/asyncapi/event-gateway) demo Kafka proxy. Expects messages based on StreetLights tutorial available at https://www.asyncapi.com/docs/tutorials/streetlights.
+    description: AsyncAPI [Event-Gateway](https://github.com/asyncapi/event-gateway) demo Kafka proxy. Expects messages based on StreetLights tutorial available at https://bit.ly/asyncapi.
   asyncapi-event-gateway-demo-validation:
     url: 'event-gateway-demo.asyncapi.org:5000/ws'
     protocol: ws
@@ -23,14 +23,14 @@ channels:
     description: Demo Kafka topic for asyncapi-event-gateway-demo server. Users can send their events to this topic and see how message validation happens on the fly based on this right AsyncAPI file by connecting to `event-gateway-demo-validation-events` channel (`asyncapi-event-gateway-demo-validation` ws server).
     publish:
       message:
-        $ref: '#/components/messages/LightMeasured'
+        $ref: 'https://bit.ly/asyncapi#/components/messages/lightMeasured'
   event-gateway-demo-validation-events:
     description: Validation errors are published here, so users can see how message validation happens on the fly based on this right AsyncAPI file.
     subscribe:
       message:
         $ref: '#/components/messages/ValidationError'
   event-gateway-demo-validation:
-    description: Validation errors are published to and consumed from it. AsyncAPI Event-gateway is the only user of this channel. It can be consumed and exposed via `event-gateway-demo-validation-events` channel (asyncapi-event-gateway-demo-validation ws server).
+    description: Validation errors are published to and consumed from it. AsyncAPI Event-gateway is the only user of this channel. It can be consumed and exposed via `event-gateway-demo-validation-events` channel (`asyncapi-event-gateway-demo-validation` ws server).
     subscribe:
       message:
         $ref: '#/components/messages/ValidationError'
@@ -57,22 +57,6 @@ components:
                 channel: 'event-gateway-demo'
               key: 'YXN5bmNhcGktd2FzLWhlcmU='
               value: 'eyJsdW1lbnMiOiAid2hhdGV2ZXIifQ=='
-    LightMeasured:
-      payload:
-        type: object
-        properties:
-          id:
-            type: integer
-            minimum: 0
-            description: Id of the streetlight.
-          lumens:
-            type: integer
-            minimum: 0
-            description: Light intensity measured in lumens.
-          sentAt:
-            type: string
-            format: date-time
-            description: Date and time when the message was sent.
   schemas:
     Message:
       type: object
@@ -91,3 +75,19 @@ components:
         channel:
           type: string
           description: Name of the channel the message was published to.
+    ## the following schemas are needed due to a bug in parser-go: https://github.com/asyncapi/parser-go/issues/82
+    sentAt:
+      $ref: 'https://bit.ly/asyncapi#/components/schemas/sentAt'
+    lightMeasuredPayload:
+      $ref: 'https://bit.ly/asyncapi#/components/schemas/lightMeasuredPayload'
+  # the following messageTraits are needed due to a bug in parser-go: https://github.com/asyncapi/parser-go/issues/82
+  # $ref can't be used on messageTraits components, that's the reason it is hardcoded from http://bit.ly/asyncapi
+  messageTraits:
+    commonHeaders:
+      headers:
+        type: object
+        properties:
+          my-app-header:
+            type: integer
+            minimum: 0
+            maximum: 100
