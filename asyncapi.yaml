@@ -8,7 +8,7 @@ servers:
   asyncapi-event-gateway-demo:
     url: 'event-gateway-demo.asyncapi.org:28002'
     protocol: kafka
-    description: AsyncAPI [Event-Gateway](https://github.com/asyncapi/event-gateway) demo Kafka proxy. Expects messages based on StreetLights tutorial available at https://bit.ly/asyncapi.
+    description: AsyncAPI [Event-Gateway](https://github.com/asyncapi/event-gateway) demo Kafka proxy. Expected messages are based on a small portion of the [StreetLights tutorial](https://bit.ly/asyncapi).
   asyncapi-event-gateway-demo-validation:
     url: 'event-gateway-demo.asyncapi.org:5000/ws'
     protocol: ws
@@ -23,7 +23,7 @@ channels:
     description: Demo Kafka topic for asyncapi-event-gateway-demo server. Users can send their events to this topic and see how message validation happens on the fly based on this right AsyncAPI file by connecting to `event-gateway-demo-validation-events` channel (`asyncapi-event-gateway-demo-validation` ws server).
     publish:
       message:
-        $ref: 'https://bit.ly/asyncapi#/components/messages/lightMeasured'
+        $ref: '#/components/messages/lightMeasured'
   event-gateway-demo-validation-events:
     description: Validation errors are published here, so users can see how message validation happens on the fly based on this right AsyncAPI file.
     subscribe:
@@ -57,6 +57,16 @@ components:
                 channel: 'event-gateway-demo'
               key: 'YXN5bmNhcGktd2FzLWhlcmU='
               value: 'eyJsdW1lbnMiOiAid2hhdGV2ZXIifQ=='
+    # lightMeasured is copied from the Streetlights tutorial instead of using references due to a bug in parser-go: https://github.com/asyncapi/parser-go/issues/82
+    lightMeasured:
+      name: lightMeasured
+      title: Light measured
+      summary: Inform about environmental lighting conditions of a particular streetlight.
+      contentType: application/json
+      traits:
+        - $ref: '#/components/messageTraits/commonHeaders'
+      payload:
+        $ref: "#/components/schemas/lightMeasuredPayload"
   schemas:
     Message:
       type: object
@@ -75,13 +85,19 @@ components:
         channel:
           type: string
           description: Name of the channel the message was published to.
-    ## the following schemas are needed due to a bug in parser-go: https://github.com/asyncapi/parser-go/issues/82
-    sentAt:
-      $ref: 'https://bit.ly/asyncapi#/components/schemas/sentAt'
     lightMeasuredPayload:
-      $ref: 'https://bit.ly/asyncapi#/components/schemas/lightMeasuredPayload'
-  # the following messageTraits are needed due to a bug in parser-go: https://github.com/asyncapi/parser-go/issues/82
-  # $ref can't be used on messageTraits components, that's the reason it is hardcoded from http://bit.ly/asyncapi
+      type: object
+      properties:
+        lumens:
+          type: integer
+          minimum: 0
+          description: Light intensity measured in lumens.
+        sentAt:
+          $ref: "#/components/schemas/sentAt"
+    sentAt:
+      type: string
+      format: date-time
+      description: Date and time when the message was sent.
   messageTraits:
     commonHeaders:
       headers:
