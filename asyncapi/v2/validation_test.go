@@ -83,7 +83,7 @@ func TestFromDocJsonSchemaMessageValidator(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			// Doc generation
 			channel := NewChannel(t.Name())
-			channel.Subscribe = NewSubscribeOperation(&Message{PayloadField: test.schema})
+			channel.Publish = NewPublishOperation(&Message{PayloadField: test.schema})
 			doc := Document{ChannelsField: map[string]Channel{t.Name(): *channel}}
 
 			// Test
