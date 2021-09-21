@@ -147,7 +147,7 @@ func (d Document) filterMessages(filter func(operation asyncapi.Operation) bool)
 	for _, c := range d.Channels() {
 		for _, o := range c.Operations() {
 			if filter(o) {
-				messages = append(messages, c.Messages()...)
+				messages = append(messages, o.Messages()...)
 			}
 		}
 	}
@@ -312,19 +312,19 @@ func (o Operation) ID() string {
 }
 
 func (o Operation) IsApplicationPublishing() bool {
-	return o.Type() == OperationTypePublish
+	return o.Type() == OperationTypeSubscribe
 }
 
 func (o Operation) IsApplicationSubscribing() bool {
-	return o.Type() == OperationTypeSubscribe
+	return o.Type() == OperationTypePublish
 }
 
 func (o Operation) IsClientPublishing() bool {
-	return o.Type() == OperationTypeSubscribe
+	return o.Type() == OperationTypePublish
 }
 
 func (o Operation) IsClientSubscribing() bool {
-	return o.Type() == OperationTypePublish
+	return o.Type() == OperationTypeSubscribe
 }
 
 func (o Operation) Messages() []asyncapi.Message {
