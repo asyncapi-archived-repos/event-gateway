@@ -6,13 +6,19 @@ import (
 	"io"
 	"strings"
 
-	"github.com/asyncapi/event-gateway/kafka/protocol"
+	"github.com/Shopify/sarama"
 	"github.com/asyncapi/event-gateway/proxy"
 	server "github.com/grepplabs/kafka-proxy/cmd/kafka-proxy"
 	kafkaproxy "github.com/grepplabs/kafka-proxy/proxy"
 	kafkaprotocol "github.com/grepplabs/kafka-proxy/proxy/protocol"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+)
+
+// Kafka request API Keys. See https://kafka.apache.org/protocol#protocol_api_keys.
+const (
+	// RequestAPIKeyProduce is the Kafka request API Key for the Produce Request.
+	RequestAPIKeyProduce = 0
 )
 
 // Context is the context that surrounds a Message.
@@ -25,7 +31,7 @@ type Message struct {
 	Context Context
 	Key     []byte
 	Value   []byte
-	Headers []*protocol.RecordHeader
+	Headers []sarama.RecordHeader
 }
 
 // MessageHandler handles a Kafka message.
@@ -44,7 +50,7 @@ func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 	}
 
 	// Yeah, not a good practice at all but I guess it's fine for now.
-	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(protocol.RequestAPIKeyProduce, NewProduceRequestHandler(c.MessageHandlers...))
+	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(RequestAPIKeyProduce, NewProduceRequestHandler(c.MessageHandlers...))
 
 	// Setting some defaults.
 	_ = server.Server.Flags().Set("default-listener-ip", "0.0.0.0") // Binding to all local network interfaces. Needed for external calls.
@@ -92,7 +98,7 @@ func (h *produceRequestHandler) Handle(requestKeyVersion *kafkaprotocol.RequestK
 		return true, nil
 	}
 
-	if requestKeyVersion.ApiKey != protocol.RequestAPIKeyProduce {
+	if requestKeyVersion.ApiKey != RequestAPIKeyProduce {
 		return true, nil
 	}
 
@@ -107,8 +113,15 @@ func (h *produceRequestHandler) Handle(requestKeyVersion *kafkaprotocol.RequestK
 		return
 	}
 
-	var req protocol.ProduceRequest
-	if err = protocol.VersionedDecode(msg, &req, requestKeyVersion.ApiVersion); err != nil {
+	// Hack for making compatible greplabs/kafka-proxy processor with Shopify/sarama ProduceRequest.
+	// As both Transactional ID and ACKs has been read already by the processor, we fake them here because the Sarama decoder expects them to be present.
+	// This information is not going to be used later on, as this is a read-only message.
+	// transactional_id_size: 255, 255 | acks: 0, 1
+	// TODO is there a way this info can be subtracted from kafka-proxy?
+	msg = append([]byte{255, 255, 0, 1}, msg...)
+
+	var req sarama.ProduceRequest
+	if err = sarama.DoVersionedDecode(msg, &req, requestKeyVersion.ApiVersion); err != nil {
 		logrus.WithError(err).Error("error decoding ProduceRequest")
 		return shouldReply, nil
 	}
@@ -131,19 +144,26 @@ func (h *produceRequestHandler) Handle(requestKeyVersion *kafkaprotocol.RequestK
 	return shouldReply, nil
 }
 
-func (h *produceRequestHandler) extractMessages(req protocol.ProduceRequest) []Message {
+func (h *produceRequestHandler) extractMessages(req sarama.ProduceRequest) []Message {
 	var msgs []Message
+
 	for topic, r := range req.Records {
 		for _, s := range r {
 			if s.RecordBatch != nil {
 				for _, r := range s.RecordBatch.Records {
+					// Fixing indirection here
+					headers := make([]sarama.RecordHeader, len(r.Headers))
+					for i := 0; i < len(r.Headers); i++ {
+						headers[i] = *r.Headers[i]
+					}
+
 					msgs = append(msgs, Message{
 						Context: Context{
 							Topic: topic,
 						},
 						Key:     r.Key,
 						Value:   r.Value,
-						Headers: r.Headers,
+						Headers: headers,
 					})
 				}
 			}
