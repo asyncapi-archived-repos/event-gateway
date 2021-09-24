@@ -12,8 +12,8 @@ import (
 
 	"github.com/asyncapi/event-gateway/config"
 	"github.com/asyncapi/event-gateway/kafka"
-	"github.com/asyncapi/event-gateway/proxy"
-	"github.com/go-chi/chi/v5"
+	"github.com/asyncapi/event-gateway/message"
+	"github.com/go-chi/chi"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/olahol/melody"
 	"github.com/sirupsen/logrus"
@@ -22,7 +22,7 @@ import (
 const configPrefix = "eventgateway"
 
 func main() {
-	validationErrChan := make(chan *proxy.ValidationError)
+	validationErrChan := make(chan *message.ValidationError)
 	c := config.NewApp(config.NotifyValidationErrorOnChan(validationErrChan))
 
 	if err := envconfig.Process(configPrefix, c); err != nil {
@@ -73,7 +73,7 @@ func main() {
 	}
 }
 
-func handleValidationErrors(ctx context.Context, validationErrChan chan *proxy.ValidationError, m *melody.Melody) {
+func handleValidationErrors(ctx context.Context, validationErrChan chan *message.ValidationError, m *melody.Melody) {
 	for {
 		select {
 		case validationErr, ok := <-validationErrChan:

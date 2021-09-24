@@ -1,4 +1,4 @@
-package proxy
+package message
 
 import (
 	"fmt"
@@ -8,24 +8,9 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-// Message represents a message flowing through the wire. For example, a Kafka message.
-type Message struct {
-	Context MessageContext  `json:"context"`
-	Key     []byte          `json:"key,omitempty"`
-	Value   []byte          `json:"value,omitempty"`
-	Headers []MessageHeader `json:"headers,omitempty"`
-}
-
-// MessageContext contains information about the context that surrounds a message.
-type MessageContext struct {
-	Channel string `json:"channel"`
-}
-
-// MessageHeader represents a header of a message, if there are any.
-type MessageHeader struct {
-	Key   []byte `json:"key"`
-	Value []byte `json:"value"`
-}
+// Validator validates a message.
+// In case the message is invalid, returns a ValidationError. The second returned value is an error during validating process.
+type Validator func(*Message) (*ValidationError, error)
 
 // ValidationError represents a message validation error.
 type ValidationError struct {
@@ -52,12 +37,8 @@ func ValidationErrorToChanNotifier(errChan chan *ValidationError) ValidationErro
 	}
 }
 
-// MessageValidator validates a message.
-// Returns a boolean indicating if the message is valid, and an error if something went wrong.
-type MessageValidator func(*Message) (*ValidationError, error)
-
-// NotifyOnValidationError is a MessageValidator that notifies ValidationError from a given MessageValidator output to the given channel.
-func NotifyOnValidationError(validator MessageValidator, notifier ValidationErrorNotifier) MessageValidator {
+// NotifyOnValidationError is a Validator that notifies ValidationError from a given Validator output to the given channel.
+func NotifyOnValidationError(validator Validator, notifier ValidationErrorNotifier) Validator {
 	return func(msg *Message) (*ValidationError, error) {
 		validationErr, err := validator(msg)
 		if err != nil {
@@ -78,7 +59,7 @@ func NotifyOnValidationError(validator MessageValidator, notifier ValidationErro
 
 // JSONSchemaMessageValidator validates a message payload based on a map of Json Schema, where the key can be any identifier  (depends on who implements it).
 // For example, the identifier can be it's channel name, message ID, etc.
-func JSONSchemaMessageValidator(messageSchemas map[string]gojsonschema.JSONLoader, idProvider func(msg *Message) string) (MessageValidator, error) {
+func JSONSchemaMessageValidator(messageSchemas map[string]gojsonschema.JSONLoader, idProvider func(msg *Message) string) (Validator, error) {
 	return func(msg *Message) (*ValidationError, error) {
 		msgID := idProvider(msg)
 		msgSchema, ok := messageSchemas[msgID]

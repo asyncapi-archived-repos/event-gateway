@@ -4,8 +4,7 @@ import (
 	"testing"
 
 	"github.com/asyncapi/event-gateway/asyncapi"
-
-	"github.com/asyncapi/event-gateway/proxy"
+	"github.com/asyncapi/event-gateway/message"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -90,8 +89,8 @@ func TestFromDocJsonSchemaMessageValidator(t *testing.T) {
 			validator, err := FromDocJSONSchemaMessageValidator(doc)
 			assert.NoError(t, err)
 
-			msg := &proxy.Message{
-				Context: proxy.MessageContext{
+			msg := &message.Message{
+				Context: message.Context{
 					Channel: t.Name(),
 				},
 				Value: test.payload,
