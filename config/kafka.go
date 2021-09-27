@@ -5,6 +5,8 @@ import (
 	"net"
 	"strings"
 
+	"github.com/asyncapi/event-gateway/message/middleware"
+
 	"github.com/asyncapi/event-gateway/asyncapi"
 	v2 "github.com/asyncapi/event-gateway/asyncapi/v2"
 	"github.com/asyncapi/event-gateway/kafka"
@@ -42,7 +44,7 @@ func NewKafkaProxy() *KafkaProxy {
 }
 
 // ProxyConfig creates a config struct for the Kafka Proxy based on a given AsyncAPI doc (if provided).
-func (c *KafkaProxy) ProxyConfig(doc []byte, debug bool, messageHandlers ...kafka.MessageHandler) (*kafka.ProxyConfig, error) {
+func (c *KafkaProxy) ProxyConfig(doc []byte, debug bool) (*kafka.ProxyConfig, error) {
 	if len(doc) == 0 && len(c.BrokersMapping.Values) == 0 {
 		return nil, errors.New("either AsyncAPIDoc or KafkaProxyBrokersMapping config should be provided")
 	}
@@ -64,7 +66,6 @@ func (c *KafkaProxy) ProxyConfig(doc []byte, debug bool, messageHandlers ...kafk
 	}
 
 	kafkaProxyConfig.Debug = debug
-	kafkaProxyConfig.MessageHandlers = append(kafkaProxyConfig.MessageHandlers, messageHandlers...)
 
 	return kafkaProxyConfig, nil
 }
@@ -85,7 +86,7 @@ func (c *KafkaProxy) configFromDoc(d []byte, opts ...kafka.Option) (*kafka.Proxy
 			validator = message.NotifyOnValidationError(validator, notifier)
 		}
 
-		opts = append(opts, kafka.WithMessageHandlers(validateMessageHandler(validator)))
+		opts = append(opts, kafka.WithMessageMiddlewares(middleware.ValidateMessage(validator, nil, false)))
 	}
 
 	servers := doc.Servers()
@@ -159,30 +160,4 @@ func extractAddressMappingFromServers(servers ...asyncapi.Server) (brokersMappin
 	}
 
 	return brokersMapping, dialAddressMapping, nil
-}
-
-func validateMessageHandler(validator message.Validator) kafka.MessageHandler {
-	return func(msg kafka.Message) error {
-		pMsg := &message.Message{
-			Context: message.Context{
-				Channel: msg.Context.Topic,
-			},
-			Key:   msg.Key,
-			Value: msg.Value,
-		}
-
-		if len(msg.Headers) > 0 {
-			pMsg.Headers = make([]message.Header, len(msg.Headers))
-			for i := 0; i < len(msg.Headers); i++ {
-				pMsg.Headers[i] = message.Header{
-					Key:   msg.Headers[i].Key,
-					Value: msg.Headers[i].Value,
-				}
-			}
-		}
-
-		_, err := validator(pMsg)
-
-		return err
-	}
 }

@@ -6,6 +6,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/asyncapi/event-gateway/message"
+
 	"github.com/Shopify/sarama"
 	"github.com/asyncapi/event-gateway/proxy"
 	server "github.com/grepplabs/kafka-proxy/cmd/kafka-proxy"
@@ -21,24 +23,6 @@ const (
 	RequestAPIKeyProduce = 0
 )
 
-// Context is the context that surrounds a Message.
-type Context struct {
-	Topic string
-}
-
-// Message is a message flowing through a Kafka topic.
-type Message struct {
-	Context Context
-	Key     []byte
-	Value   []byte
-	Headers []sarama.RecordHeader
-}
-
-// MessageHandler handles a Kafka message.
-// If error is returned, kafka request will fail.
-// Note: Message manipulation is not allowed.
-type MessageHandler func(Message) error
-
 // NewProxy creates a new Kafka Proxy based on a given configuration.
 func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 	if c == nil {
@@ -50,7 +34,7 @@ func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 	}
 
 	// Yeah, not a good practice at all but I guess it's fine for now.
-	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(RequestAPIKeyProduce, NewProduceRequestHandler(c.MessageHandlers...))
+	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(RequestAPIKeyProduce, NewProduceRequestHandler(c.MessageMiddlewares...))
 
 	// Setting some defaults.
 	_ = server.Server.Flags().Set("default-listener-ip", "0.0.0.0") // Binding to all local network interfaces. Needed for external calls.
@@ -82,19 +66,19 @@ func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 }
 
 // NewProduceRequestHandler creates a new request key handler for the Produce Request.
-func NewProduceRequestHandler(msgHandlers ...MessageHandler) kafkaproxy.KeyHandler {
+func NewProduceRequestHandler(middlewares ...message.Middleware) kafkaproxy.KeyHandler {
 	return &produceRequestHandler{
-		msgHandlers: msgHandlers,
+		chain: message.Chain(middlewares...),
 	}
 }
 
 type produceRequestHandler struct {
-	msgHandlers []MessageHandler
+	chain message.Middleware
 }
 
 func (h *produceRequestHandler) Handle(requestKeyVersion *kafkaprotocol.RequestKeyVersion, src io.Reader, ctx *kafkaproxy.RequestsLoopContext, bufferRead *bytes.Buffer) (shouldReply bool, err error) {
-	if len(h.msgHandlers) == 0 {
-		logrus.Infoln("No message handlers were set. Skipping produceRequestHandler")
+	if h.chain == nil {
+		logrus.Infoln("No message middlewares were set. Skipping produceRequestHandler")
 		return true, nil
 	}
 
@@ -133,33 +117,32 @@ func (h *produceRequestHandler) Handle(requestKeyVersion *kafkaprotocol.RequestK
 	}
 
 	for _, m := range msgs {
-		for _, h := range h.msgHandlers {
-			if err := h(m); err != nil {
-				logrus.WithError(err).Error("error handling message")
-				return shouldReply, nil
-			}
+		if _, err := h.chain(m); err != nil {
+			logrus.WithError(err).Error("error handling message")
+			return shouldReply, nil
 		}
 	}
 
 	return shouldReply, nil
 }
 
-func (h *produceRequestHandler) extractMessages(req sarama.ProduceRequest) []Message {
-	var msgs []Message
-
+func (h *produceRequestHandler) extractMessages(req sarama.ProduceRequest) []*message.Message {
+	var msgs []*message.Message
 	for topic, r := range req.Records {
 		for _, s := range r {
 			if s.RecordBatch != nil {
 				for _, r := range s.RecordBatch.Records {
-					// Fixing indirection here
-					headers := make([]sarama.RecordHeader, len(r.Headers))
+					headers := make([]message.Header, len(r.Headers))
 					for i := 0; i < len(r.Headers); i++ {
-						headers[i] = *r.Headers[i]
+						headers[i] = message.Header{
+							Key:   r.Headers[i].Key,
+							Value: r.Headers[i].Value,
+						}
 					}
 
-					msgs = append(msgs, Message{
-						Context: Context{
-							Topic: topic,
+					msgs = append(msgs, &message.Message{
+						Context: message.Context{
+							Channel: topic,
 						},
 						Key:     r.Key,
 						Value:   r.Value,
@@ -169,9 +152,9 @@ func (h *produceRequestHandler) extractMessages(req sarama.ProduceRequest) []Mes
 			}
 			if s.MsgSet != nil {
 				for _, mb := range s.MsgSet.Messages {
-					msgs = append(msgs, Message{
-						Context: Context{
-							Topic: topic,
+					msgs = append(msgs, &message.Message{
+						Context: message.Context{
+							Channel: topic,
 						},
 						Key:   mb.Msg.Key,
 						Value: mb.Msg.Value,

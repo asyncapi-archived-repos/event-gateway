@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/asyncapi/event-gateway/message"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
@@ -18,15 +20,17 @@ type ProxyConfig struct {
 	BrokersMapping     []string
 	DialAddressMapping []string
 	ExtraConfig        []string
-	MessageHandlers    []MessageHandler
+	MessageMiddlewares []message.Middleware
 	Debug              bool
 }
 
+// Option represents a functional configuration for the Proxy.
 type Option func(*ProxyConfig) error
 
-func WithMessageHandlers(messageHandlers ...MessageHandler) Option {
+// WithMessageMiddlewares configures sets a given list of message.Middlware as proxy message middlewares.
+func WithMessageMiddlewares(middlewares ...message.Middleware) Option {
 	return func(c *ProxyConfig) error {
-		c.MessageHandlers = append(c.MessageHandlers, messageHandlers...)
+		c.MessageMiddlewares = append(c.MessageMiddlewares, middlewares...)
 		return nil
 	}
 }
@@ -95,7 +99,7 @@ func (c *ProxyConfig) Validate() error {
 		}
 	}
 
-	if len(c.MessageHandlers) == 0 {
+	if len(c.MessageMiddlewares) == 0 {
 		logrus.Warn("There are no message handlers configured")
 	}
 

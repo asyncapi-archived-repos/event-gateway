@@ -13,7 +13,7 @@ import (
 	"github.com/asyncapi/event-gateway/config"
 	"github.com/asyncapi/event-gateway/kafka"
 	"github.com/asyncapi/event-gateway/message"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/olahol/melody"
 	"github.com/sirupsen/logrus"
