@@ -7,10 +7,8 @@ import (
 	"strings"
 
 	"github.com/asyncapi/event-gateway/message"
-
-	"github.com/sirupsen/logrus"
-
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 var localHostIpv4 = regexp.MustCompile(`127\.0\.0\.\d+`)

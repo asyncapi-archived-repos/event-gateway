@@ -6,9 +6,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/asyncapi/event-gateway/message"
-
 	"github.com/Shopify/sarama"
+	"github.com/asyncapi/event-gateway/message"
 	"github.com/asyncapi/event-gateway/proxy"
 	server "github.com/grepplabs/kafka-proxy/cmd/kafka-proxy"
 	kafkaproxy "github.com/grepplabs/kafka-proxy/proxy"
