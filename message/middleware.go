@@ -6,7 +6,7 @@ import "github.com/pkg/errors"
 var ErrMiddlewareMissingReturn = errors.New("a middleware did not return either a message or an error but one is expected")
 
 // Middleware is a function applied to a Message and returns the same Message after processing it or modifying it.
-// If a middleware does not return a Message, the message should be considered as discarded.
+// A middleware should return either a Message or an error.
 type Middleware func(m *Message) (*Message, error)
 
 // Chain calls all given middlewares in a pipeline-fashioned process. Order of middlewares is preserved during execution.
