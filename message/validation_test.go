@@ -1,4 +1,4 @@
-package proxy
+package message
 
 import (
 	"testing"
@@ -29,7 +29,7 @@ func TestNotifyOnValidationError(t *testing.T) {
 
 func generateTestMessage() *Message {
 	return &Message{
-		Context: MessageContext{Channel: "test"},
+		Context: Context{Channel: "test"},
 		Value:   []byte(`Hello World!`),
 	}
 }

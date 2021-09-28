@@ -6,16 +6,15 @@ import (
 	"hash/crc32"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/require"
-
-	logrustest "github.com/sirupsen/logrus/hooks/test"
-
+	"github.com/asyncapi/event-gateway/message"
 	"github.com/asyncapi/event-gateway/proxy"
 	kafkaproxy "github.com/grepplabs/kafka-proxy/proxy"
 	kafkaprotocol "github.com/grepplabs/kafka-proxy/proxy/protocol"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	logrustest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewKafka(t *testing.T) {
@@ -62,17 +61,22 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 		apiKey            int16
 		shouldSkipRequest bool
 		expectedLoggedErr error
+		handler           message.Handler
 	}{
 		{
 			name:        "Valid message",
 			request:     generateProduceRequestV8("valid message"),
 			shouldReply: true,
+			handler:     noopHandler,
 		},
 		{
 			name:              "Invalid message",
 			request:           generateProduceRequestV8("invalid message"),
 			shouldReply:       true,
 			expectedLoggedErr: errors.New("message is invalid"),
+			handler: func(m *message.Message) (*message.Message, error) {
+				return nil, errors.New("message is invalid")
+			},
 		},
 		{
 			name:              "Other Requests (different than Produce type) are skipped",
@@ -91,15 +95,7 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 				Length:     int32(len(test.request) + 4), // 4 bytes are ApiKey + Version located in all request headers (already read by the time of validating the msg).
 			}
 
-			simpleMessageValidationHandler := func(m Message) error {
-				if string(m.Value) == "invalid message" {
-					return errors.New("message is invalid")
-				}
-
-				return nil
-			}
-
-			h := NewProduceRequestHandler(simpleMessageValidationHandler)
+			h := NewProduceRequestHandler(test.handler)
 
 			readBytes := bytes.NewBuffer(nil)
 			shouldReply, err := h.Handle(kv, bytes.NewReader(test.request), &kafkaproxy.RequestsLoopContext{}, readBytes)
@@ -124,6 +120,10 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 			}
 		})
 	}
+}
+
+func noopHandler(m *message.Message) (*message.Message, error) {
+	return m, nil
 }
 
 func generateProduceRequestV8(payload string) []byte {

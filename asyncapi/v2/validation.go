@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/asyncapi/event-gateway/asyncapi"
-	"github.com/asyncapi/event-gateway/proxy"
+	"github.com/asyncapi/event-gateway/message"
 	"github.com/xeipuuv/gojsonschema"
 )
 
-func FromDocJSONSchemaMessageValidator(doc asyncapi.Document) (proxy.MessageValidator, error) {
+func FromDocJSONSchemaMessageValidator(doc asyncapi.Document) (message.Validator, error) {
 	channels := doc.ApplicationSubscribableChannels()
 	messageSchemas := make(map[string]gojsonschema.JSONLoader)
 	for _, c := range channels {
@@ -51,10 +51,10 @@ func FromDocJSONSchemaMessageValidator(doc asyncapi.Document) (proxy.MessageVali
 		}
 	}
 
-	idProvider := func(msg *proxy.Message) string {
+	idProvider := func(msg *message.Message) string {
 		// messageSchemas map is indexed by Channel name, so we need to tell the validator.
 		return msg.Context.Channel
 	}
 
-	return proxy.JSONSchemaMessageValidator(messageSchemas, idProvider)
+	return message.JSONSchemaMessageValidator(messageSchemas, idProvider)
 }

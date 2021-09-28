@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/asyncapi/event-gateway/message"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 var localHostIpv4 = regexp.MustCompile(`127\.0\.0\.\d+`)
@@ -18,15 +18,17 @@ type ProxyConfig struct {
 	BrokersMapping     []string
 	DialAddressMapping []string
 	ExtraConfig        []string
-	MessageHandlers    []MessageHandler
+	MessageHandlers    []message.Handler
 	Debug              bool
 }
 
+// Option represents a functional configuration for the Proxy.
 type Option func(*ProxyConfig) error
 
-func WithMessageHandlers(messageHandlers ...MessageHandler) Option {
+// WithMessageHandlers configures sets a given list of message.Handler as proxy message handlers.
+func WithMessageHandlers(handlers ...message.Handler) Option {
 	return func(c *ProxyConfig) error {
-		c.MessageHandlers = append(c.MessageHandlers, messageHandlers...)
+		c.MessageHandlers = append(c.MessageHandlers, handlers...)
 		return nil
 	}
 }

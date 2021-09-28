@@ -5,11 +5,12 @@ import (
 	"net"
 	"strings"
 
-	"github.com/asyncapi/event-gateway/proxy"
+	"github.com/asyncapi/event-gateway/message/handler"
 
 	"github.com/asyncapi/event-gateway/asyncapi"
 	v2 "github.com/asyncapi/event-gateway/asyncapi/v2"
 	"github.com/asyncapi/event-gateway/kafka"
+	"github.com/asyncapi/event-gateway/message"
 	"github.com/pkg/errors"
 )
 
@@ -22,14 +23,14 @@ type KafkaProxy struct {
 
 // MessageValidation holds the config about message validation.
 type MessageValidation struct {
-	Enabled  bool                          `default:"true" desc:"Enable or disable validation of Kafka messages"`
-	Notifier proxy.ValidationErrorNotifier `envconfig:"-"`
+	Enabled  bool                            `default:"true" desc:"Enable or disable validation of Kafka messages"`
+	Notifier message.ValidationErrorNotifier `envconfig:"-"`
 }
 
 // NotifyValidationErrorOnChan sets a channel as ValidationError notifier.
-func NotifyValidationErrorOnChan(errChan chan *proxy.ValidationError) Opt {
+func NotifyValidationErrorOnChan(errChan chan *message.ValidationError) Opt {
 	return func(app *App) {
-		app.KafkaProxy.MessageValidation.Notifier = proxy.ValidationErrorToChanNotifier(errChan)
+		app.KafkaProxy.MessageValidation.Notifier = message.ValidationErrorToChanNotifier(errChan)
 	}
 }
 
@@ -59,10 +60,10 @@ func (c *KafkaProxy) ProxyConfig(d []byte, debug bool) (*kafka.ProxyConfig, erro
 		}
 
 		if notifier := c.MessageValidation.Notifier; notifier != nil {
-			validator = proxy.NotifyOnValidationError(validator, notifier)
+			validator = message.NotifyOnValidationError(validator, notifier)
 		}
 
-		opts = append(opts, kafka.WithMessageHandlers(validateMessageHandler(validator)))
+		opts = append(opts, kafka.WithMessageHandlers(handler.ValidateMessage(validator, nil, false)))
 	}
 
 	servers := doc.Servers()
@@ -136,30 +137,4 @@ func extractAddressMappingFromServers(servers ...asyncapi.Server) (brokersMappin
 	}
 
 	return brokersMapping, dialAddressMapping, nil
-}
-
-func validateMessageHandler(validator proxy.MessageValidator) kafka.MessageHandler {
-	return func(msg kafka.Message) error {
-		pMsg := &proxy.Message{
-			Context: proxy.MessageContext{
-				Channel: msg.Context.Topic,
-			},
-			Key:   msg.Key,
-			Value: msg.Value,
-		}
-
-		if len(msg.Headers) > 0 {
-			pMsg.Headers = make([]proxy.MessageHeader, len(msg.Headers))
-			for i := 0; i < len(msg.Headers); i++ {
-				pMsg.Headers[i] = proxy.MessageHeader{
-					Key:   msg.Headers[i].Key,
-					Value: msg.Headers[i].Value,
-				}
-			}
-		}
-
-		_, err := validator(pMsg)
-
-		return err
-	}
 }
