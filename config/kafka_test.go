@@ -18,7 +18,7 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 		expectedErr         error
 	}{
 		{
-			name: "Valid config. Only one broker from doc",
+			name: "Valid config. Only one broker",
 			config: &KafkaProxy{
 				BrokerFromServer: "test",
 				// Also testing extra flags.
@@ -33,7 +33,7 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 			doc: []byte(`testdata/simple-kafka.yaml`),
 		},
 		{
-			name: "Valid config. Only one broker from doc + enable message validation",
+			name: "Valid config. Only one broker + enable message validation",
 			config: &KafkaProxy{
 				BrokerFromServer: "test",
 				MessageValidation: MessageValidation{
@@ -48,7 +48,7 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 			doc: []byte(`testdata/simple-kafka.yaml`),
 		},
 		{
-			name: "Valid config. Only one broker + Override listener port from doc",
+			name: "Valid config. Only one broker + Override listener port",
 			config: &KafkaProxy{
 				BrokerFromServer: "test",
 			},
@@ -60,7 +60,7 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 			doc: []byte(`testdata/override-port-kafka.yaml`),
 		},
 		{
-			name:   "Valid config. All brokers + Override listener port from doc",
+			name:   "Valid config. All brokers + Override listener port",
 			config: &KafkaProxy{},
 			expectedProxyConfig: func(t *testing.T, c *kafka.ProxyConfig) *kafka.ProxyConfig {
 				return &kafka.ProxyConfig{
@@ -81,47 +81,10 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 			doc: []byte(`testdata/dial-mapping-kafka.yaml`),
 		},
 		{
-			name: "Valid config. Only broker mapping",
-			config: &KafkaProxy{
-				BrokersMapping: pipeSeparatedValues{Values: []string{"broker.mybrokers.org:9092,:9092"}},
-			},
-			expectedProxyConfig: func(_ *testing.T, _ *kafka.ProxyConfig) *kafka.ProxyConfig {
-				return &kafka.ProxyConfig{
-					BrokersMapping: []string{"broker.mybrokers.org:9092,:9092"},
-				}
-			},
-		},
-		{
-			name: "Valid config. Broker mapping + Dial mapping",
-			config: &KafkaProxy{
-				BrokersMapping:     pipeSeparatedValues{Values: []string{"broker.mybrokers.org:9092,:9092"}},
-				BrokersDialMapping: pipeSeparatedValues{Values: []string{"broker.mybrokers.org:9092,192.168.1.10:9092"}},
-			},
-			expectedProxyConfig: func(_ *testing.T, _ *kafka.ProxyConfig) *kafka.ProxyConfig {
-				return &kafka.ProxyConfig{
-					BrokersMapping:     []string{"broker.mybrokers.org:9092,:9092"},
-					DialAddressMapping: []string{"broker.mybrokers.org:9092,192.168.1.10:9092"},
-				}
-			},
-		},
-		{
-			name:        "Invalid config. No broker mapping",
+			name:        "Invalid config. Both broker and proxy are the same",
 			config:      &KafkaProxy{},
-			expectedErr: errors.New("either AsyncAPIDoc or KafkaProxyBrokersMapping config should be provided"),
-		},
-		{
-			name: "Invalid config. Both broker and proxy can't listen to the same port within same host",
-			config: &KafkaProxy{
-				BrokersMapping: pipeSeparatedValues{Values: []string{"localhost:9092,:9092"}},
-			},
 			expectedErr: errors.New("broker and proxy can't listen to the same port on the same host. Broker is already listening at localhost:9092. Please configure a different listener port"),
-		},
-		{
-			name: "Invalid config. Both broker and proxy are the same",
-			config: &KafkaProxy{
-				BrokersMapping: pipeSeparatedValues{Values: []string{"broker.mybrokers.org:9092,broker.mybrokers.org:9092"}},
-			},
-			expectedErr: errors.New("broker and proxy can't listen to the same port on the same host. Broker is already listening at broker.mybrokers.org:9092. Please configure a different listener port"),
+			doc:         []byte(`testdata/invalid-same-address.yaml`),
 		},
 	}
 	for _, test := range tests {

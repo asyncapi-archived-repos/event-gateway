@@ -31,10 +31,10 @@ func WithMessageHandlers(messageHandlers ...MessageHandler) Option {
 	}
 }
 
-// WithDebug enables debug.
-func WithDebug() Option {
+// WithDebug enables/disables debug.
+func WithDebug(enabled bool) Option {
 	return func(c *ProxyConfig) error {
-		c.Debug = true
+		c.Debug = enabled
 		return nil
 	}
 }

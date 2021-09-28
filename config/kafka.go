@@ -15,11 +15,9 @@ import (
 
 // KafkaProxy holds the config for later configuring a Kafka proxy.
 type KafkaProxy struct {
-	BrokerFromServer   string              `split_words:"true" desc:"When configuring from an AsyncAPI doc, this allows the user to only configure one server instead of all"`
-	BrokersMapping     pipeSeparatedValues `split_words:"true" desc:"Configure the mapping between remote broker address (the address published by the broker) and desired local address. Format is 'remotehost:remoteport,localhost:localport'. Multiple values can be configured by using pipe separation (|)"`
-	BrokersDialMapping pipeSeparatedValues `split_words:"true" desc:"Configure the mapping between published remote broker address and the address the proxy will use when forwarding requests. Format is 'remotehost:remoteport,localhost:localport'. Multiple values can be configured by using pipe separation (|)"`
-	MessageValidation  MessageValidation   `split_words:"true" desc:""`
-	ExtraFlags         pipeSeparatedValues `split_words:"true" desc:"Advanced configuration. Configure any flag from https://github.com/grepplabs/kafka-proxy/blob/4f3b89fbaecb3eb82426f5dcff5f76188ea9a9dc/cmd/kafka-proxy/server.go#L85-L195. Multiple values can be configured by using pipe separation (|)"`
+	BrokerFromServer  string              `split_words:"true" desc:"When configuring from an AsyncAPI doc, this allows the user to only configure one server instead of all"`
+	MessageValidation MessageValidation   `split_words:"true" desc:""`
+	ExtraFlags        pipeSeparatedValues `split_words:"true" desc:"Advanced configuration. Configure any flag from https://github.com/grepplabs/kafka-proxy/blob/4f3b89fbaecb3eb82426f5dcff5f76188ea9a9dc/cmd/kafka-proxy/server.go#L85-L195. Multiple values can be configured by using pipe separation (|)"`
 }
 
 // MessageValidation holds the config about message validation.
@@ -43,39 +41,17 @@ func NewKafkaProxy() *KafkaProxy {
 }
 
 // ProxyConfig creates a config struct for the Kafka Proxy based on a given AsyncAPI doc (if provided).
-func (c *KafkaProxy) ProxyConfig(doc []byte, debug bool, messageHandlers ...kafka.MessageHandler) (*kafka.ProxyConfig, error) {
-	if len(doc) == 0 && len(c.BrokersMapping.Values) == 0 {
-		return nil, errors.New("either AsyncAPIDoc or KafkaProxyBrokersMapping config should be provided")
+func (c *KafkaProxy) ProxyConfig(d []byte, debug bool) (*kafka.ProxyConfig, error) {
+	if len(d) == 0 {
+		return nil, errors.New("AsyncAPIDoc config should be provided")
 	}
 
-	if c.BrokerFromServer != "" && len(doc) == 0 {
-		return nil, errors.New("AsyncAPIDoc should be provided when setting BrokerFromServer")
-	}
-
-	var kafkaProxyConfig *kafka.ProxyConfig
-	var err error
-	if len(doc) > 0 {
-		kafkaProxyConfig, err = c.configFromDoc(doc, kafka.WithExtra(c.ExtraFlags.Values))
-	} else {
-		kafkaProxyConfig, err = kafka.NewProxyConfig(c.BrokersMapping.Values, kafka.WithDialAddressMapping(c.BrokersDialMapping.Values), kafka.WithExtra(c.ExtraFlags.Values))
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	kafkaProxyConfig.Debug = debug
-	kafkaProxyConfig.MessageHandlers = append(kafkaProxyConfig.MessageHandlers, messageHandlers...)
-
-	return kafkaProxyConfig, nil
-}
-
-func (c *KafkaProxy) configFromDoc(d []byte, opts ...kafka.Option) (*kafka.ProxyConfig, error) {
 	doc := new(v2.Document)
 	if err := v2.Decode(d, doc); err != nil {
 		return nil, errors.Wrap(err, "error decoding AsyncAPI json doc to Document struct")
 	}
 
+	opts := []kafka.Option{kafka.WithExtra(c.ExtraFlags.Values), kafka.WithDebug(debug)}
 	if c.MessageValidation.Enabled {
 		validator, err := v2.FromDocJSONSchemaMessageValidator(doc)
 		if err != nil {
