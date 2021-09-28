@@ -18,17 +18,17 @@ type ProxyConfig struct {
 	BrokersMapping     []string
 	DialAddressMapping []string
 	ExtraConfig        []string
-	MessageMiddlewares []message.Middleware
+	MessageHandlers    []message.Handler
 	Debug              bool
 }
 
 // Option represents a functional configuration for the Proxy.
 type Option func(*ProxyConfig) error
 
-// WithMessageMiddlewares configures sets a given list of message.Middlware as proxy message middlewares.
-func WithMessageMiddlewares(middlewares ...message.Middleware) Option {
+// WithMessageHandlers configures sets a given list of message.Middlware as proxy message handlers.
+func WithMessageHandlers(handlers ...message.Handler) Option {
 	return func(c *ProxyConfig) error {
-		c.MessageMiddlewares = append(c.MessageMiddlewares, middlewares...)
+		c.MessageHandlers = append(c.MessageHandlers, handlers...)
 		return nil
 	}
 }
@@ -97,7 +97,7 @@ func (c *ProxyConfig) Validate() error {
 		}
 	}
 
-	if len(c.MessageMiddlewares) == 0 {
+	if len(c.MessageHandlers) == 0 {
 		logrus.Warn("There are no message handlers configured")
 	}
 

@@ -1,4 +1,4 @@
-package middleware
+package handler
 
 import (
 	"github.com/asyncapi/event-gateway/message"
@@ -10,8 +10,8 @@ import (
 var ErrMessageIsInvalid = errors.New("Message is invalid and failWhenInvalid was set to true")
 
 // ValidateMessage validates a message. Optionally notifies if a notifier is set.
-// By default, next middleware will always be called, including whenever the message is invalid. If you want to make it fail then, set failWhenInvalid to true.
-func ValidateMessage(validator message.Validator, notifier message.ValidationErrorNotifier, failWhenInvalid bool) message.Middleware {
+// By default, next handler will always be called, including whenever the message is invalid. If you want to make it fail then, set failWhenInvalid to true.
+func ValidateMessage(validator message.Validator, notifier message.ValidationErrorNotifier, failWhenInvalid bool) message.Handler {
 	return func(m *message.Message) (*message.Message, error) {
 		validationErr, err := validator(m)
 		if err != nil {

@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/asyncapi/event-gateway/message/middleware"
+	"github.com/asyncapi/event-gateway/message/handler"
 
 	"github.com/asyncapi/event-gateway/asyncapi"
 	v2 "github.com/asyncapi/event-gateway/asyncapi/v2"
@@ -86,7 +86,7 @@ func (c *KafkaProxy) configFromDoc(d []byte, opts ...kafka.Option) (*kafka.Proxy
 			validator = message.NotifyOnValidationError(validator, notifier)
 		}
 
-		opts = append(opts, kafka.WithMessageMiddlewares(middleware.ValidateMessage(validator, nil, false)))
+		opts = append(opts, kafka.WithMessageHandlers(handler.ValidateMessage(validator, nil, false)))
 	}
 
 	servers := doc.Servers()

@@ -33,7 +33,7 @@ func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 	}
 
 	// Yeah, not a good practice at all but I guess it's fine for now.
-	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(RequestAPIKeyProduce, NewProduceRequestHandler(c.MessageMiddlewares...))
+	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(RequestAPIKeyProduce, NewProduceRequestHandler(c.MessageHandlers...))
 
 	// Setting some defaults.
 	_ = server.Server.Flags().Set("default-listener-ip", "0.0.0.0") // Binding to all local network interfaces. Needed for external calls.
@@ -65,19 +65,19 @@ func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 }
 
 // NewProduceRequestHandler creates a new request key handler for the Produce Request.
-func NewProduceRequestHandler(middlewares ...message.Middleware) kafkaproxy.KeyHandler {
+func NewProduceRequestHandler(handlers ...message.Handler) kafkaproxy.KeyHandler {
 	return &produceRequestHandler{
-		chain: message.MiddlewaresChain(middlewares...),
+		chain: message.HandlersChain(handlers...),
 	}
 }
 
 type produceRequestHandler struct {
-	chain message.Middleware
+	chain message.Handler
 }
 
 func (h *produceRequestHandler) Handle(requestKeyVersion *kafkaprotocol.RequestKeyVersion, src io.Reader, ctx *kafkaproxy.RequestsLoopContext, bufferRead *bytes.Buffer) (shouldReply bool, err error) {
 	if h.chain == nil {
-		logrus.Infoln("No message middlewares were set. Skipping produceRequestHandler")
+		logrus.Infoln("No message handlers were set. Skipping produceRequestHandler")
 		return true, nil
 	}
 
