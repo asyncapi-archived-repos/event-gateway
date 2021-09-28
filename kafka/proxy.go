@@ -67,7 +67,7 @@ func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 // NewProduceRequestHandler creates a new request key handler for the Produce Request.
 func NewProduceRequestHandler(middlewares ...message.Middleware) kafkaproxy.KeyHandler {
 	return &produceRequestHandler{
-		chain: message.Chain(middlewares...),
+		chain: message.MiddlewaresChain(middlewares...),
 	}
 }
 

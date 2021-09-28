@@ -9,8 +9,8 @@ var ErrMiddlewareMissingReturn = errors.New("a middleware did not return either 
 // A middleware should return either a Message or an error.
 type Middleware func(m *Message) (*Message, error)
 
-// Chain calls all given middlewares in a pipeline-fashioned process. Order of middlewares is preserved during execution.
-func Chain(middlewares ...Middleware) Middleware {
+// MiddlewaresChain calls all given middlewares in a pipeline-fashioned process. Order of middlewares is preserved during execution.
+func MiddlewaresChain(middlewares ...Middleware) Middleware {
 	return func(m *Message) (*Message, error) {
 		var err error
 		for _, middleware := range middlewares {

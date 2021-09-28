@@ -10,7 +10,7 @@ import (
 func TestMiddleware_EnsureOrderOfExecution(t *testing.T) {
 	var timesCalled uint32
 	msg := &Message{}
-	returnedMsg, err := Chain(
+	returnedMsg, err := MiddlewaresChain(
 		orderAwareMiddleware(t, 0, &timesCalled),
 		orderAwareMiddleware(t, 1, &timesCalled),
 		orderAwareMiddleware(t, 2, &timesCalled),
@@ -34,7 +34,7 @@ func TestMiddleware_OneErrorShouldStopExecution(t *testing.T) {
 	}
 
 	msg := &Message{}
-	returnedMsg, err := Chain(m1, m2, m3)(msg)
+	returnedMsg, err := MiddlewaresChain(m1, m2, m3)(msg)
 	assert.EqualError(t, err, "whatever error")
 	assert.Nil(t, returnedMsg)
 }
@@ -45,7 +45,7 @@ func TestMiddleware_MissingReturnShouldError(t *testing.T) {
 	}
 
 	msg := &Message{}
-	returnedMsg, err := Chain(missingReturnMiddleware)(msg)
+	returnedMsg, err := MiddlewaresChain(missingReturnMiddleware)(msg)
 	assert.EqualError(t, err, ErrMiddlewareMissingReturn.Error())
 	assert.Nil(t, returnedMsg)
 }
