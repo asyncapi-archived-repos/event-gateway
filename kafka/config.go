@@ -25,7 +25,7 @@ type ProxyConfig struct {
 // Option represents a functional configuration for the Proxy.
 type Option func(*ProxyConfig) error
 
-// WithMessageHandlers configures sets a given list of message.Middlware as proxy message handlers.
+// WithMessageHandlers configures sets a given list of message.Handler as proxy message handlers.
 func WithMessageHandlers(handlers ...message.Handler) Option {
 	return func(c *ProxyConfig) error {
 		c.MessageHandlers = append(c.MessageHandlers, handlers...)
