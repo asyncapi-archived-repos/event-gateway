@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	watermillmessage "github.com/ThreeDotsLabs/watermill/message"
-
 	"github.com/asyncapi/event-gateway/asyncapi"
 	"github.com/asyncapi/event-gateway/message"
 	"github.com/xeipuuv/gojsonschema"
