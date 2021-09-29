@@ -87,7 +87,7 @@ func handleValidationErrors(ctx context.Context, validationErrChan chan *message
 				content = []byte(`For some reason, this validation error can't be seen. Please drop us an issue on github.'`)
 			}
 
-			logrus.WithField("validation_error", string(content)).Debug("a message validation error has been found")
+			logrus.WithError(validationErr).Debug("Message is invalid")
 
 			if err := m.Broadcast(content); err != nil {
 				logrus.WithError(err).Error("error broadcasting message to all ws sessions")

@@ -2,37 +2,12 @@ package message
 
 import (
 	"testing"
-	"time"
 
+	"github.com/ThreeDotsLabs/watermill"
+	watermillmessage "github.com/ThreeDotsLabs/watermill/message"
 	"github.com/stretchr/testify/assert"
 	"github.com/xeipuuv/gojsonschema"
 )
-
-func TestNotifyOnValidationError(t *testing.T) {
-	expectedMessage := generateTestMessage()
-	validator := func(msg *Message) (*ValidationError, error) {
-		assert.Equal(t, expectedMessage, msg)
-		return NewValidationError(msg, time.Now(), "This is a validation error"), nil
-	}
-
-	var notified bool
-	notifier := func(validationError *ValidationError) error {
-		notified = true
-		return nil
-	}
-
-	validationErr, err := NotifyOnValidationError(validator, notifier)(expectedMessage)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, validationErr.Errors)
-	assert.True(t, notified)
-}
-
-func generateTestMessage() *Message {
-	return &Message{
-		Context: Context{Channel: "test"},
-		Value:   []byte(`Hello World!`),
-	}
-}
 
 func TestJsonSchemaMessageValidator(t *testing.T) {
 	schema := `{
@@ -68,15 +43,15 @@ func TestJsonSchemaMessageValidator(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			expectedMsg := generateTestMessage()
-			expectedMsg.Value = test.payload
+			expectedMsg.Payload = test.payload
 
 			idToSchemaMap := map[string]gojsonschema.JSONLoader{
-				expectedMsg.Context.Channel: gojsonschema.NewStringLoader(schema),
+				expectedMsg.Metadata.Get(MetadataChannel): gojsonschema.NewStringLoader(schema),
 			}
 
-			validator, err := JSONSchemaMessageValidator(idToSchemaMap, func(msg *Message) string {
+			validator, err := JSONSchemaMessageValidator(idToSchemaMap, func(msg *watermillmessage.Message) string {
 				assert.Equal(t, expectedMsg, msg)
-				return msg.Context.Channel
+				return msg.Metadata.Get(MetadataChannel)
 			})
 			assert.NoError(t, err)
 
@@ -91,4 +66,10 @@ func TestJsonSchemaMessageValidator(t *testing.T) {
 			}
 		})
 	}
+}
+
+func generateTestMessage() *watermillmessage.Message {
+	msg := watermillmessage.NewMessage(watermill.NewUUID(), []byte(`Hello World!`))
+	msg.Metadata.Set(MetadataChannel, "the-channel")
+	return msg
 }

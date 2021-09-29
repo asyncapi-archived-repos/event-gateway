@@ -6,7 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/asyncapi/event-gateway/message"
+	watermillmessage "github.com/ThreeDotsLabs/watermill/message"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -18,17 +19,26 @@ type ProxyConfig struct {
 	BrokersMapping     []string
 	DialAddressMapping []string
 	ExtraConfig        []string
-	MessageHandlers    []message.Handler
+	MessageHandler     watermillmessage.HandlerFunc
+	MessageMiddlewares []watermillmessage.HandlerMiddleware
 	Debug              bool
 }
 
 // Option represents a functional configuration for the Proxy.
 type Option func(*ProxyConfig) error
 
-// WithMessageHandlers configures sets a given list of message.Handler as proxy message handlers.
-func WithMessageHandlers(handlers ...message.Handler) Option {
+// WithMessageMiddlewares ...
+func WithMessageMiddlewares(middlewares ...watermillmessage.HandlerMiddleware) Option {
 	return func(c *ProxyConfig) error {
-		c.MessageHandlers = append(c.MessageHandlers, handlers...)
+		c.MessageMiddlewares = append(c.MessageMiddlewares, middlewares...)
+		return nil
+	}
+}
+
+// WithMessageHandler ...
+func WithMessageHandler(handler watermillmessage.HandlerFunc) Option {
+	return func(c *ProxyConfig) error {
+		c.MessageHandler = handler
 		return nil
 	}
 }
@@ -97,8 +107,8 @@ func (c *ProxyConfig) Validate() error {
 		}
 	}
 
-	if len(c.MessageHandlers) == 0 {
-		logrus.Warn("There are no message handlers configured")
+	if c.MessageHandler == nil {
+		logrus.Warn("There is no message handler configured")
 	}
 
 	return nil

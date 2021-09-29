@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	watermillmessage "github.com/ThreeDotsLabs/watermill/message"
+
 	"github.com/asyncapi/event-gateway/asyncapi"
 	"github.com/asyncapi/event-gateway/message"
 	"github.com/xeipuuv/gojsonschema"
@@ -51,9 +53,9 @@ func FromDocJSONSchemaMessageValidator(doc asyncapi.Document) (message.Validator
 		}
 	}
 
-	idProvider := func(msg *message.Message) string {
-		// messageSchemas map is indexed by Channel name, so we need to tell the validator.
-		return msg.Context.Channel
+	idProvider := func(msg *watermillmessage.Message) string {
+		// messageSchemas map is indexed by Channel name, so we need to tell the validator from where it should get that info.
+		return msg.Metadata.Get(message.MetadataChannel)
 	}
 
 	return message.JSONSchemaMessageValidator(messageSchemas, idProvider)

@@ -1,20 +1,19 @@
 package message
 
-// Message represents a message flowing through the wire. For example, a Kafka message.
-type Message struct {
-	Context Context  `json:"context"`
-	Key     []byte   `json:"key,omitempty"`
-	Value   []byte   `json:"value,omitempty"`
-	Headers []Header `json:"headers,omitempty"`
-}
+import (
+	"github.com/ThreeDotsLabs/watermill"
+	watermillmessage "github.com/ThreeDotsLabs/watermill/message"
+)
 
-// Context contains information about the context that surrounds a message.
-type Context struct {
-	Channel string `json:"channel"`
-}
+const (
+	// MetadataChannel is the key used for storing the Channel in the message Metadata.
+	MetadataChannel = "_asyncapi_eg_channel"
+)
 
-// Header represents a header of a message, if there are any.
-type Header struct {
-	Key   []byte `json:"key"`
-	Value []byte `json:"value"`
+// New creates a new watermillmessage.Message. It injects the Channel as Metadata.
+func New(payload []byte, channel string) *watermillmessage.Message {
+	msg := watermillmessage.NewMessage(watermill.NewUUID(), payload)
+	msg.Metadata.Set(MetadataChannel, channel)
+
+	return msg
 }

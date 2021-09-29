@@ -5,12 +5,11 @@ import (
 	"net"
 	"strings"
 
-	"github.com/asyncapi/event-gateway/message/handler"
-
 	"github.com/asyncapi/event-gateway/asyncapi"
 	v2 "github.com/asyncapi/event-gateway/asyncapi/v2"
 	"github.com/asyncapi/event-gateway/kafka"
 	"github.com/asyncapi/event-gateway/message"
+	"github.com/asyncapi/event-gateway/message/handler"
 	"github.com/pkg/errors"
 )
 
@@ -59,11 +58,7 @@ func (c *KafkaProxy) ProxyConfig(d []byte, debug bool) (*kafka.ProxyConfig, erro
 			return nil, errors.Wrap(err, "error creating message validator")
 		}
 
-		if notifier := c.MessageValidation.Notifier; notifier != nil {
-			validator = message.NotifyOnValidationError(validator, notifier)
-		}
-
-		opts = append(opts, kafka.WithMessageHandlers(handler.ValidateMessage(validator, nil, false)))
+		opts = append(opts, kafka.WithMessageHandler(handler.ValidateMessage(validator, c.MessageValidation.Notifier, false)))
 	}
 
 	servers := doc.Servers()

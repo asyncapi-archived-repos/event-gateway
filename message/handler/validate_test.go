@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	watermillmessage "github.com/ThreeDotsLabs/watermill/message"
 	"github.com/asyncapi/event-gateway/message"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +19,7 @@ func TestValidateMessage(t *testing.T) {
 	}{
 		{
 			name: "Message is valid",
-			validator: func(*message.Message) (*message.ValidationError, error) {
+			validator: func(*watermillmessage.Message) (*message.ValidationError, error) {
 				return nil, nil
 			},
 		},
@@ -43,20 +44,21 @@ func TestValidateMessage(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			msg := &message.Message{}
-			returnedMsg, err := ValidateMessage(test.validator, test.notifier, test.failWhenInvalid)(msg)
+			msg := message.New([]byte{}, test.name)
+			returnedMsgs, err := ValidateMessage(test.validator, test.notifier, test.failWhenInvalid)(msg)
 			if test.expectedErr != nil {
 				assert.EqualError(t, err, test.expectedErr.Error())
-				assert.Nil(t, returnedMsg)
+				assert.Empty(t, returnedMsgs)
 			} else {
 				assert.NoError(t, err)
-				assert.Same(t, msg, returnedMsg)
+				assert.Len(t, returnedMsgs, 1)
+				assert.Same(t, msg, returnedMsgs[0])
 			}
 		})
 	}
 }
 
-func invalidMessageValidator(m *message.Message) (*message.ValidationError, error) {
+func invalidMessageValidator(m *watermillmessage.Message) (*message.ValidationError, error) {
 	return &message.ValidationError{
 		Timestamp: time.Now(),
 		Msg:       m,

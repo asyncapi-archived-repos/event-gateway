@@ -4,6 +4,8 @@ go 1.16
 
 require (
 	github.com/Shopify/sarama v1.29.1
+	github.com/ThreeDotsLabs/watermill v1.0.2
+	github.com/ThreeDotsLabs/watermill-kafka/v2 v2.2.1
 	github.com/asyncapi/parser-go v0.3.1-0.20210701222435-43ab3e4b47d6
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/gorilla/websocket v1.4.2 // indirect
@@ -17,6 +19,7 @@ require (
 	github.com/xdg/scram v1.0.3 // indirect
 	github.com/xdg/stringprep v1.0.3 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 )
 
 replace (

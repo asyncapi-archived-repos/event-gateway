@@ -2,10 +2,14 @@ package kafka
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"hash/crc32"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	watermillmessage "github.com/ThreeDotsLabs/watermill/message"
 	"github.com/asyncapi/event-gateway/message"
 	"github.com/asyncapi/event-gateway/proxy"
 	kafkaproxy "github.com/grepplabs/kafka-proxy/proxy"
@@ -60,23 +64,29 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 		shouldReply       bool
 		apiKey            int16
 		shouldSkipRequest bool
-		expectedLoggedErr error
-		handler           message.Handler
+		extraCheck        func(t *testing.T, handlerCalledTimes int)
+		expectedLoggedErr string
+		sleepBeforeCheck  time.Duration
+		handler           watermillmessage.HandlerFunc
 	}{
 		{
-			name:        "Valid message",
+			name:        "Handler success",
 			request:     generateProduceRequestV8("valid message"),
 			shouldReply: true,
 			handler:     noopHandler,
 		},
 		{
-			name:              "Invalid message",
-			request:           generateProduceRequestV8("invalid message"),
+			name:              "Handler error means Nack. Message is resent infinitely.",
+			request:           generateProduceRequestV8("something is gonna make it fail!"),
 			shouldReply:       true,
-			expectedLoggedErr: errors.New("message is invalid"),
-			handler: func(m *message.Message) (*message.Message, error) {
-				return nil, errors.New("message is invalid")
+			expectedLoggedErr: "message is invalid, meaning Nack will be sent and message will be resent infinitely",
+			extraCheck: func(t *testing.T, handlerCalls int) {
+				assert.Greater(t, handlerCalls, 1)
 			},
+			handler: func(msg *watermillmessage.Message) ([]*watermillmessage.Message, error) {
+				return nil, errors.New("message is invalid, meaning Nack will be sent and message will be resent infinitely") // This will send a Nack, meaning message will be resent.
+			},
+			sleepBeforeCheck: time.Millisecond, // letting the handlers be called several times due to Nack produced by returning an error.
 		},
 		{
 			name:              "Other Requests (different than Produce type) are skipped",
@@ -89,14 +99,35 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			log := logrustest.NewGlobal()
+
+			r, err := watermillmessage.NewRouter(watermillmessage.RouterConfig{}, message.NewWatermillLogrusLogger(logrus.StandardLogger()))
+			require.NoError(t, err)
+
+			var handlerCalls uint32
+			// Wrapping handler so we can add a spy.
+			handler := func(msg *watermillmessage.Message) ([]*watermillmessage.Message, error) {
+				atomic.AddUint32(&handlerCalls, 1)
+				return test.handler(msg)
+			}
+			h := NewProduceRequestHandler(r, handler)
+
+			go func() {
+				// Running the router
+				require.NoError(t, r.Run(context.Background()))
+			}()
+			t.Cleanup(func() {
+				// Closing the router
+				require.NoError(t, r.Close())
+			})
+
+			// Do not start test until the router is fully up and running.
+			<-r.Running()
+
 			kv := &kafkaprotocol.RequestKeyVersion{
 				ApiVersion: 8,                            // All test data was grabbed from a Produce Request version 8.
 				ApiKey:     test.apiKey,                  // default is 0, which is a Produce Request
 				Length:     int32(len(test.request) + 4), // 4 bytes are ApiKey + Version located in all request headers (already read by the time of validating the msg).
 			}
-
-			h := NewProduceRequestHandler(test.handler)
-
 			readBytes := bytes.NewBuffer(nil)
 			shouldReply, err := h.Handle(kv, bytes.NewReader(test.request), &kafkaproxy.RequestsLoopContext{}, readBytes)
 			assert.NoError(t, err)
@@ -108,11 +139,18 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 				assert.Equal(t, readBytes.Len(), len(test.request))
 			}
 
-			if test.expectedLoggedErr != nil {
+			if test.sleepBeforeCheck > 0 {
+				time.Sleep(test.sleepBeforeCheck)
+			}
+
+			if test.extraCheck != nil {
+				test.extraCheck(t, int(atomic.LoadUint32(&handlerCalls)))
+			}
+
+			if test.expectedLoggedErr != "" {
 				entry := log.LastEntry()
-				require.NotEmpty(t, entry)
 				require.Contains(t, entry.Data, logrus.ErrorKey)
-				assert.EqualError(t, entry.Data[logrus.ErrorKey].(error), test.expectedLoggedErr.Error())
+				assert.EqualError(t, entry.Data[logrus.ErrorKey].(error), test.expectedLoggedErr)
 			} else {
 				for _, l := range log.AllEntries() {
 					assert.NotEqualf(t, l.Level, logrus.ErrorLevel, "%q logged error unexpected", l.Message) // We don't have a notification mechanism for errors yet
@@ -122,8 +160,8 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 	}
 }
 
-func noopHandler(m *message.Message) (*message.Message, error) {
-	return m, nil
+func noopHandler(msg *watermillmessage.Message) ([]*watermillmessage.Message, error) {
+	return []*watermillmessage.Message{msg}, nil
 }
 
 func generateProduceRequestV8(payload string) []byte {
