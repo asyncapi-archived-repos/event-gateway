@@ -26,7 +26,11 @@ const (
 	RequestAPIKeyProduce = 0
 )
 
-const messagesChannelName = "kafka-produced-messages"
+const (
+	messagesChannelName = "kafka-produced-messages"
+)
+
+var defaultMarshaler = watermillkafka.DefaultMarshaler{}
 
 // NewProxy creates a new Kafka Proxy based on a given configuration.
 func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
@@ -166,13 +170,12 @@ func (h *produceRequestHandler) Handle(requestKeyVersion *kafkaprotocol.RequestK
 }
 
 func (h *produceRequestHandler) extractMessages(req sarama.ProduceRequest) ([]*watermillmessage.Message, error) {
-	marshaler := watermillkafka.DefaultMarshaler{}
 	var msgs []*watermillmessage.Message
 	for topic, records := range req.Records {
 		for partition, s := range records {
 			if s.RecordBatch != nil {
 				for _, r := range s.RecordBatch.Records {
-					msg, err := marshaler.Unmarshal(&sarama.ConsumerMessage{
+					msg, err := defaultMarshaler.Unmarshal(&sarama.ConsumerMessage{
 						Headers:   r.Headers,
 						Key:       r.Key,
 						Value:     r.Value,
@@ -191,7 +194,7 @@ func (h *produceRequestHandler) extractMessages(req sarama.ProduceRequest) ([]*w
 			}
 			if s.MsgSet != nil {
 				for _, mb := range s.MsgSet.Messages {
-					msg, err := marshaler.Unmarshal(&sarama.ConsumerMessage{
+					msg, err := defaultMarshaler.Unmarshal(&sarama.ConsumerMessage{
 						Key:       mb.Msg.Key,
 						Value:     mb.Msg.Value,
 						Timestamp: mb.Msg.Timestamp,
