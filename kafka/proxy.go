@@ -157,7 +157,7 @@ func (h *produceRequestHandler) Handle(requestKeyVersion *kafkaprotocol.RequestK
 	}
 
 	if len(msgs) == 0 {
-		logrus.Error("The produce request has no messages")
+		logrus.Error("Unexpected error: The produce request has no messages")
 		return
 	}
 
