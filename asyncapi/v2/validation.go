@@ -11,6 +11,7 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
+// FromDocJSONSchemaMessageValidator creates a message.Validator based on a given AsyncAPI doc.
 func FromDocJSONSchemaMessageValidator(doc asyncapi.Document) (message.Validator, error) {
 	channels := doc.ApplicationSubscribableChannels()
 	messageSchemas := make(map[string]gojsonschema.JSONLoader)
