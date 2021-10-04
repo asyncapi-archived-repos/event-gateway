@@ -107,7 +107,11 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 			// Wrapping handler so we can add a spy.
 			handler := func(msg *watermillmessage.Message) ([]*watermillmessage.Message, error) {
 				atomic.AddUint32(&handlerCalls, 1)
-				return test.handler(msg)
+				if test.handler != nil {
+					return test.handler(msg)
+				}
+
+				return noopHandler(msg)
 			}
 			h := NewProduceRequestHandler(r, handler)
 
