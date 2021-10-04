@@ -41,7 +41,7 @@ func TestKafkaProxy_ProxyConfig(t *testing.T) {
 			},
 			expectedProxyConfig: func(t *testing.T, c *kafka.ProxyConfig) *kafka.ProxyConfig {
 				assert.Equal(t, []string{"broker.mybrokers.org:9092,:9092"}, c.BrokersMapping)
-				assert.Len(t, c.MessageHandlers, 1)
+				assert.NotNil(t, c.MessageHandler)
 				return nil
 			},
 			doc: []byte(`testdata/simple-kafka.yaml`),

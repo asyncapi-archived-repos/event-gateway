@@ -1,20 +1,22 @@
 package message
 
-// Message represents a message flowing through the wire. For example, a Kafka message.
-type Message struct {
-	Context Context  `json:"context"`
-	Key     []byte   `json:"key,omitempty"`
-	Value   []byte   `json:"value,omitempty"`
-	Headers []Header `json:"headers,omitempty"`
-}
+import (
+	"github.com/ThreeDotsLabs/watermill"
+	watermillmessage "github.com/ThreeDotsLabs/watermill/message"
+)
 
-// Context contains information about the context that surrounds a message.
-type Context struct {
-	Channel string `json:"channel"`
-}
+// The following constants are the keys on a watermill.Message Metadata where we store valuable and needed domain metadata.
+// All contain the prefix `_asyncapi_eg_` so they can be unique-ish and human-readable.
+// As a note: The term `eg` is a short version of Event-Gateway.
+const (
+	// MetadataChannel is the key used for storing the Channel in the message Metadata.
+	MetadataChannel = "_asyncapi_eg_channel"
+)
 
-// Header represents a header of a message, if there are any.
-type Header struct {
-	Key   []byte `json:"key"`
-	Value []byte `json:"value"`
+// New creates a new watermillmessage.Message. It injects the Channel as Metadata.
+func New(payload []byte, channel string) *watermillmessage.Message {
+	msg := watermillmessage.NewMessage(watermill.NewUUID(), payload)
+	msg.Metadata.Set(MetadataChannel, channel)
+
+	return msg
 }

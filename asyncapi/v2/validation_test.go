@@ -89,12 +89,7 @@ func TestFromDocJsonSchemaMessageValidator(t *testing.T) {
 			validator, err := FromDocJSONSchemaMessageValidator(doc)
 			assert.NoError(t, err)
 
-			msg := &message.Message{
-				Context: message.Context{
-					Channel: t.Name(),
-				},
-				Value: test.payload,
-			}
+			msg := message.New(test.payload, t.Name())
 			validationErr, err := validator(msg)
 			assert.NoError(t, err)
 
