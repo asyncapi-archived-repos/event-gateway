@@ -68,6 +68,17 @@ func TestJsonSchemaMessageValidator(t *testing.T) {
 	}
 }
 
+func TestValidationErrorFromMessage(t *testing.T) {
+	msg := New([]byte{}, "channel")
+
+	validationErr := &ValidationError{Errors: []string{"random error!"}}
+	assert.NoError(t, ValidationErrorToMessage(msg, validationErr))
+
+	fetchedValidationErr, err := ValidationErrorFromMessage(msg)
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, validationErr.Errors, fetchedValidationErr.Errors)
+}
+
 func generateTestMessage() *watermillmessage.Message {
 	msg := watermillmessage.NewMessage(watermill.NewUUID(), []byte(`Hello World!`))
 	msg.Metadata.Set(MetadataChannel, "the-channel")

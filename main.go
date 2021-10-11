@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	watermillmessage "github.com/ThreeDotsLabs/watermill/message"
 	"github.com/asyncapi/event-gateway/config"
 	"github.com/asyncapi/event-gateway/kafka"
 	"github.com/asyncapi/event-gateway/message"
@@ -17,14 +18,13 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/olahol/melody"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 )
 
 const configPrefix = "eventgateway"
 
 func main() {
-	validationErrChan := make(chan *message.ValidationError)
-	c := config.NewApp(config.NotifyValidationErrorOnChan(validationErrChan))
-
+	c := config.NewApp()
 	if err := envconfig.Process(configPrefix, c); err != nil {
 		_ = envconfig.Usage(configPrefix, c)
 		logrus.WithError(err).Fatal()
@@ -40,61 +40,92 @@ func main() {
 		logrus.WithError(err).Fatal()
 	}
 
-	kafkaProxy, err := kafka.NewProxy(kafkaProxyConfig)
+	watermillLogger := message.NewWatermillLogrusLogger(logrus.StandardLogger())
+	messageRouter, err := watermillmessage.NewRouter(watermillmessage.RouterConfig{}, watermillLogger)
+	if err != nil {
+		logrus.WithError(err).Fatal()
+	}
+	defer messageRouter.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	m := melody.New()
+	handleInterruptions(cancel, func() error {
+		return m.CloseWithMsg(melody.FormatCloseMessage(1000, "The server says goodbye :)"))
+	})
+
+	if kafkaProxyConfig.MessageSubscriber != nil {
+		defer kafkaProxyConfig.MessageSubscriber.Close()
+		defer kafkaProxyConfig.MessagePublisher.Close()
+		messageRouter.AddNoPublisherHandler("consume-validation-errors-from-kafka", c.KafkaProxy.MessageValidation.PublishToKafkaTopic, kafkaProxyConfig.MessageSubscriber, validationErrorsHandler(m))
+	}
+
+	kafkaProxy, err := kafka.NewProxy(kafkaProxyConfig, messageRouter)
 	if err != nil {
 		_ = envconfig.Usage(configPrefix, c)
 		logrus.WithError(err).Fatal()
 	}
 
-	m := melody.New()
+	runWebsocketServer(c.WSServerPort, "/ws", m)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	handleInterruptions(cancel, func() error {
-		return m.CloseWithMsg(melody.FormatCloseMessage(1000, "The server says goodbye :)"))
+	group, ctx := errgroup.WithContext(ctx)
+	group.Go(func() error {
+		return messageRouter.Run(ctx) // Note: Can not be called until fully configured.
+	})
+	group.Go(func() error {
+		return kafkaProxy(ctx)
 	})
 
+	if err := group.Wait(); err != nil {
+		logrus.WithError(err).Fatal()
+	}
+}
+
+func runWebsocketServer(port int, path string, m *melody.Melody) {
 	r := chi.NewRouter()
-	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
+	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
 		_ = m.HandleRequest(w, r)
 	})
 
 	go func() {
-		address := fmt.Sprintf(":%v", c.WSServerPort)
+		address := fmt.Sprintf(":%v", port)
 		logrus.Infof("Websocket server listening on %s", address)
 		if err := http.ListenAndServe(address, r); err != nil {
 			logrus.WithError(err).Fatal("error running websocket server")
 		}
 	}()
-
-	go handleValidationErrors(ctx, validationErrChan, m)
-	if err := kafkaProxy(context.Background()); err != nil {
-		logrus.WithError(err).Fatal()
-	}
 }
 
-func handleValidationErrors(ctx context.Context, validationErrChan chan *message.ValidationError, m *melody.Melody) {
-	for {
-		select {
-		case validationErr, ok := <-validationErrChan:
-			if !ok {
-				return
-			}
-
-			content, err := json.Marshal(validationErr)
-			if err != nil {
-				logrus.WithError(err).Error("error encoding validationError")
-				content = []byte(`For some reason, this validation error can't be seen. Please drop us an issue on github.'`)
-			}
-
-			logrus.WithError(validationErr).Debug("Message is invalid")
-
-			if err := m.Broadcast(content); err != nil {
-				logrus.WithError(err).Error("error broadcasting message to all ws sessions")
-			}
-		case <-ctx.Done():
-			return
+func validationErrorsHandler(m *melody.Melody) watermillmessage.NoPublishHandlerFunc {
+	return func(msg *watermillmessage.Message) error {
+		validationError, err := message.ValidationErrorFromMessage(msg)
+		if err != nil {
+			logrus.WithError(err).WithField("uuid", msg.UUID).Error("Couldn't determine if the message is rather invalid or not")
+			return nil // no retry
 		}
+
+		if validationError == nil {
+			return nil
+		}
+
+		content, err := json.Marshal(msg)
+		if err != nil {
+			logrus.WithError(err).Error("error marshaling message")
+			content = []byte(fmt.Sprintf(
+				"The message %s is invalid: %s. However, there was an error during encoding and couldn't be shown completely. Please drop us an issue on github.",
+				msg.UUID,
+				validationError.Error(),
+			))
+		}
+
+		logrus.WithError(validationError).Debug("Message is invalid")
+
+		if err := m.Broadcast(content); err != nil {
+			logrus.WithError(err).Error("error broadcasting message to all ws sessions")
+		}
+
+		return nil
 	}
 }
 

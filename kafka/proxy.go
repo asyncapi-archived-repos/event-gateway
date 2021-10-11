@@ -3,6 +3,7 @@ package kafka
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"strings"
 
@@ -17,7 +18,6 @@ import (
 	kafkaprotocol "github.com/grepplabs/kafka-proxy/proxy/protocol"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/sync/errgroup"
 )
 
 // Kafka request API Keys. See https://kafka.apache.org/protocol#protocol_api_keys.
@@ -33,7 +33,7 @@ const (
 var defaultMarshaler = watermillkafka.DefaultMarshaler{}
 
 // NewProxy creates a new Kafka Proxy based on a given configuration.
-func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
+func NewProxy(c *ProxyConfig, r *watermillmessage.Router) (proxy.Proxy, error) {
 	if c == nil {
 		return nil, errors.New("config should be provided")
 	}
@@ -42,12 +42,8 @@ func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 		return nil, err
 	}
 
-	r, err := watermillmessage.NewRouter(watermillmessage.RouterConfig{}, message.NewWatermillLogrusLogger(logrus.StandardLogger()))
-	if err != nil {
-		return nil, err
-	}
 	// Yeah, not a good practice at all but I guess it's fine for now.
-	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(RequestAPIKeyProduce, NewProduceRequestHandler(r, c.MessageHandler, c.MessageMiddlewares...))
+	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(RequestAPIKeyProduce, NewProduceRequestHandler(r, c.MessageHandler, c.MessagePublisher, c.PublishToTopic))
 
 	// Setting some defaults.
 	_ = server.Server.Flags().Set("default-listener-ip", "0.0.0.0") // Binding to all local network interfaces. Needed for external calls.
@@ -58,6 +54,14 @@ func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 
 	if c.Debug {
 		_ = server.Server.Flags().Set("log-level", "debug")
+	}
+
+	if c.TLS != nil && c.TLS.Enable {
+		_ = server.Server.Flags().Set("tls-enable", "true")
+		_ = server.Server.Flags().Set("tls-insecure-skip-verify", fmt.Sprintf("%v", c.TLS.InsecureSkipVerify))
+		_ = server.Server.Flags().Set("tls-client-cert-file", c.TLS.ClientCertFile)
+		_ = server.Server.Flags().Set("tls-client-key-file", c.TLS.ClientKeyFile)
+		_ = server.Server.Flags().Set("tls-ca-chain-cert-file", c.TLS.CAChainCertFile)
 	}
 
 	for _, v := range c.ExtraConfig {
@@ -74,21 +78,12 @@ func NewProxy(c *ProxyConfig) (proxy.Proxy, error) {
 	}
 
 	return func(ctx context.Context) error {
-		defer r.Close()
-		group, ctx := errgroup.WithContext(ctx)
-		group.Go(func() error {
-			return r.Run(ctx) // Note: Can not be called until fully configured.
-		})
-		group.Go(func() error {
-			return server.Server.Execute()
-		})
-
-		return group.Wait()
+		return server.Server.Execute()
 	}, nil
 }
 
 // NewProduceRequestHandler creates a new request key handler for the Produce Request.
-func NewProduceRequestHandler(r *watermillmessage.Router, handler watermillmessage.HandlerFunc, middlewares ...watermillmessage.HandlerMiddleware) kafkaproxy.KeyHandler {
+func NewProduceRequestHandler(r *watermillmessage.Router, handler watermillmessage.HandlerFunc, publisher watermillmessage.Publisher, publishToTopic string) kafkaproxy.KeyHandler {
 	if handler == nil {
 		return &produceRequestHandler{}
 	}
@@ -96,16 +91,18 @@ func NewProduceRequestHandler(r *watermillmessage.Router, handler watermillmessa
 	chanConfig := gochannel.Config{
 		OutputChannelBuffer: 100, // TODO consider making this configurable
 	}
+
 	goChannelPubSub := gochannel.NewGoChannel(chanConfig, message.NewWatermillLogrusLogger(logrus.StandardLogger()))
-
-	// This time we use a noPubisher handler, so converting the given handler.
-	h := func(msg *watermillmessage.Message) error {
-		_, err := handler(msg)
-		return err
+	if publisher == nil {
+		// This time we use a noPublisher handler, so converting the given handler.
+		h := func(msg *watermillmessage.Message) error {
+			_, err := handler(msg)
+			return err
+		}
+		r.AddNoPublisherHandler("on-produce-request", messagesChannelName, goChannelPubSub, h)
+	} else {
+		r.AddHandler("on-produce-request", messagesChannelName, goChannelPubSub, publishToTopic, publisher, handler)
 	}
-
-	r.AddNoPublisherHandler("on-produce-request", messagesChannelName, goChannelPubSub, h)
-	r.AddMiddleware(middlewares...)
 
 	return &produceRequestHandler{
 		publisher: goChannelPubSub,

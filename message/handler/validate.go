@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+
 	watermillmessage "github.com/ThreeDotsLabs/watermill/message"
 	"github.com/asyncapi/event-gateway/message"
 	"github.com/pkg/errors"
@@ -10,9 +12,10 @@ import (
 // ErrMessageIsInvalid is the error used when a message did not pass validation and failWhenInvalid option was set to true.
 var ErrMessageIsInvalid = errors.New("Message is invalid and failWhenInvalid was set to true")
 
-// ValidateMessage validates a message. Optionally notifies if a notifier is set.
-// By default, next handler will always be called, including whenever the message is invalid. If you want to make it fail then, set failWhenInvalid to true.
-func ValidateMessage(validator message.Validator, notifier message.ValidationErrorNotifier, failWhenInvalid bool) watermillmessage.HandlerFunc {
+// ValidateMessage validates a message. If invalid, It injects the validation error into the message Metadata.
+// By default, next handler will always be called, including whenever the message is invalid.
+// In case you want to make it fail, set failWhenInvalid to true.
+func ValidateMessage(validator message.Validator, failWhenInvalid bool) watermillmessage.HandlerFunc {
 	return func(msg *watermillmessage.Message) ([]*watermillmessage.Message, error) {
 		validationErr, err := validator(msg)
 		if err != nil {
@@ -20,19 +23,19 @@ func ValidateMessage(validator message.Validator, notifier message.ValidationErr
 		}
 
 		if validationErr != nil {
-			if notifier != nil {
-				if err := notifier(validationErr); err != nil {
-					logrus.WithError(err).Error("error notifying message validation error")
-				}
-			} else {
-				logrus.WithError(validationErr).Error("Message is invalid")
+			if failWhenInvalid {
+				err = ErrMessageIsInvalid
 			}
 
-			if failWhenInvalid {
-				return nil, ErrMessageIsInvalid
+			rawErr, err := json.Marshal(validationErr)
+			if err != nil {
+				logrus.WithError(err).Error("Error marshaling message.ValidationError")
 			}
+
+			// Injecting the validation error into the message Metadata.
+			msg.Metadata.Set(message.MetadataValidationError, string(rawErr))
 		}
 
-		return []*watermillmessage.Message{msg}, nil
+		return []*watermillmessage.Message{msg}, err
 	}
 }

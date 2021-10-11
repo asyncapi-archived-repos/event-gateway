@@ -3,6 +3,7 @@ package kafka
 import (
 	"testing"
 
+	messagetest "github.com/asyncapi/event-gateway/message/test"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,6 +26,24 @@ func TestProxyConfig_Validate(t *testing.T) {
 				BrokersMapping:     []string{"broker.mybrokers.org:9092,:9092"},
 				DialAddressMapping: []string{"broker.mybrokers.org:9092,192.168.1.10:9092"},
 			},
+		},
+		{
+			name: "Invalid config. Message Handler is set, PublishToTopic is set but Publisher is not",
+			config: ProxyConfig{
+				BrokersMapping: []string{"broker.mybrokers.org:9092,:9092"},
+				MessageHandler: noopHandler,
+				PublishToTopic: "foo-topic",
+			},
+			expectedErr: errors.New("MessagePublisher and PublishToTopic should be set together"),
+		},
+		{
+			name: "Invalid config. Message Handler is set, Publisher is set but PublishToTopic is not",
+			config: ProxyConfig{
+				BrokersMapping:   []string{"broker.mybrokers.org:9092,:9092"},
+				MessageHandler:   noopHandler,
+				MessagePublisher: messagetest.NoopPublisher{},
+			},
+			expectedErr: errors.New("MessagePublisher and PublishToTopic should be set together"),
 		},
 		{
 			name:        "Invalid config. No broker mapping",
