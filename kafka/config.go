@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	watermillmessage "github.com/ThreeDotsLabs/watermill/message"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )

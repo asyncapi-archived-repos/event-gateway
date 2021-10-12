@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "asyncapi-event-gateway.fullname" . }}
+  labels:
+    {{- include "asyncapi-event-gateway.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.ports.healthcheck }}
+      targetPort: http
+    - name: websocket
+      protocol: TCP
+      port: {{ .Values.ports.websocket }}
+      targetPort: websocket
+    {{- range .Values.ports.brokers }}
+    - name: "broker-{{ . }}"
+      protocol: TCP
+      port: {{ . }}
+      targetPort: "broker-{{ . }}"
+    {{ end }}
+  selector:
+    {{- include "asyncapi-event-gateway.selectorLabels" . | nindent 4 }}

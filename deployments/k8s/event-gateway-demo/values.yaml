@@ -1,0 +1,61 @@
+asyncapi-event-gateway:
+  volumeMounts:
+    - name: secret-volume
+      readOnly: true
+      mountPath: "/etc/certs"
+
+  volumes:
+    - name: secret-volume
+      secret:
+        # -- Same name as the configured in `asyncapi-event-gateway.secret.name`.
+        secretName: asyncapi-event-gateway-aiven-certificates
+
+  env:
+    EVENTGATEWAY_DEBUG: "true"
+    # -- This is where the asyncapi.yaml file is mounted when `--set-file asyncapi-event-gateway.asyncapiFileContent=event-gateway-demo/event-gateway-demo.asyncapi.yaml`.
+    EVENTGATEWAY_ASYNC_API_DOC: "/app/asyncapi.yaml"
+    # -- Only use `asyncapi-kafka-test` declared server.
+    EVENTGATEWAY_KAFKA_PROXY_BROKER_FROM_SERVER: "asyncapi-kafka-test"
+    # -- Dynamic broker listeners will start on this port. Aiven cluster has, at least, 3 brokers (3 discovered brokers, one of those is known as the bootstrap server (20472)).
+    EVENTGATEWAY_KAFKA_PROXY_EXTRA_FLAGS: "dynamic-sequential-min-port=20473"
+    # -- event-gateway-demo-validation is the topic where validation errors will be published to. The app reads from it and exposes those errors through the ws server.
+    EVENTGATEWAY_KAFKA_PROXY_MESSAGE_VALIDATION_PUBLISH_TO_KAFKA_TOPIC: "event-gateway-demo-validation"
+    EVENTGATEWAY_KAFKA_PROXY_TLS_ENABLE: "true"
+    # -- Value comes from `--set asyncapi-event-gateway.secret.data.cert=$(base64 cert-file-path)`
+    EVENTGATEWAY_KAFKA_PROXY_TLS_CLIENT_CERT_FILE: "/etc/certs/cert"
+    # -- Value comes from `--set asyncapi-event-gateway.secret.data.cert=$(base64 key-file-path)`
+    EVENTGATEWAY_KAFKA_PROXY_TLS_CLIENT_KEY_FILE: "/etc/certs/key"
+    # -- Value comes from `--set asyncapi-event-gateway.secret.data.cert=$(base64 ca-file-path)`
+    EVENTGATEWAY_KAFKA_PROXY_TLS_CA_CHAIN_CERT_FILE: "/etc/certs/ca"
+    # -- his is the address that points to the DO load balancer in front of the Event-Gateway K8s service.
+    EVENTGATEWAY_KAFKA_PROXY_ADDRESS: "event-gateway-demo.asyncapi.org"
+
+  # -- cert, key and ca set via `--set asyncapi-event-gateway.secret.data.{cert|key|ca}=$(base64 filepath)`
+  secret:
+    # -- Same name as the configured in `asyncapi-event-gateway.volumes[secret-volume].secret.secretName`.
+    name: asyncapi-event-gateway-aiven-certificates
+    data: {}
+
+  # -- As dynamic-sequential-min-port is set to 20473, and Aiven has 3 brokers, we add those to the list apart from the kwnown bootstrap one (20472).
+  ports:
+    brokers: [20472, 20473, 20474, 20475]
+
+  service:
+    # -- LoadBalancer type will tell Digital Ocean K8s to create a Network load balancer based on the annotations set above.
+    type: LoadBalancer # Digital Ocean LB
+    annotations:
+      service.beta.kubernetes.io/do-loadbalancer-protocol: "tcp"
+      service.beta.kubernetes.io/do-loadbalancer-size-slug: "lb-small"
+
+  # -- TODO Set this once we run some load testing within DO.
+  resources: {}
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi

@@ -1,0 +1,108 @@
+# Default values for asyncapi-event-gateway.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  repository: ghcr.io/asyncapi/event-gateway
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+
+replicaCount: 2
+
+# -- AsyncAPI file. Should be the content of the file as plain text.
+# Set either the AsyncAPI file content with '--set-file asyncapi-event-gateway.asyncapiFileContent=<filename>'
+# or a URL to a valid spec file through '--set asyncapi-event-gateway.env.EVENTGATEWAY_ASYNC_API_DOC=<url>'
+# The reason is that files from parent charts can't be accessed from subcharts. See https://github.com/helm/helm/pull/10077.
+asyncapiFileContent: ""
+
+# -- The path where the AsyncAPI file will be located within the pod.
+# In case you want to load the file from a URL, unset this value.
+asyncapiFileMountPath: "/app/asyncapi.yaml"
+
+# -- Create a secret if needed. Useful for creating certificates for connecting to clusters such as Kafka.
+# Combine it with a mounted volume, then you can load the certificates from a known path.
+secret: {}
+#  name: asyncapi-event-gateway-foobar-kafka-certificates
+#  data:
+#    cert: 'base64-cert-here' # `--set asyncapi-event-gateway.secret.data.cert=$(base64 cert-file-path)`
+#    key: 'base64-key-here'   # `--set asyncapi-event-gateway.secret.data.key=$(base64 key-file-path)`
+#    ca: 'base64-ca-here'     # `--set asyncapi-event-gateway.secret.data.ca=$(base64 ca-file-path)`
+
+# -- Mount your volume. Especially useful for mounting secrets as explained above.
+volumes: []
+#  - name: secret-volume
+#    secret:
+#      secretName: "syncapi-event-gateway-foobar-kafka-certificates"
+volumeMounts: []
+#  - name: secret-volume
+#    readOnly: true
+#    mountPath: "/etc/certs"
+
+# -- Event-Gateway opened ports.
+ports:
+  # -- Used as simple healthcheck. Called by K8s Deployment LivenessProbe and ReadinessProbe.
+  healthcheck: 80
+  # -- The websocket where the Event-Gateway API will be available.
+  websocket: 5000
+  # -- Specify ports for all possible brokers (both boostrap and discovered).
+  brokers: []
+
+# Event-Gateway env vars. Needed for configuring the app.
+env:
+  EVENTGATEWAY_DEBUG: "true"
+  # -- This is where the asyncapi.yaml file is mounted when `--set-file asyncapi-event-gateway.asyncapiFileContent=event-gateway-demo/event-gateway-demo.asyncapi.yaml`.
+  EVENTGATEWAY_ASYNC_API_DOC: "/app/asyncapi.yaml"
+#  EVENTGATEWAY_KAFKA_PROXY_BROKER_FROM_SERVER: "asyncapi-kafka-test"
+#  EVENTGATEWAY_KAFKA_PROXY_EXTRA_FLAGS: "dynamic-sequential-min-port=20473"                           # discovered brokers will open a port starting on this port
+#  EVENTGATEWAY_KAFKA_PROXY_MESSAGE_VALIDATION_PUBLISH_TO_KAFKA_TOPIC: "event-gateway-demo-validation"
+#  EVENTGATEWAY_KAFKA_PROXY_TLS_ENABLE: "true"                                                         # Please configure secret, volumes and volumeMounts.
+#  EVENTGATEWAY_KAFKA_PROXY_TLS_CLIENT_CERT_FILE: "/etc/certs/cert"                                    # Please configure secret, volumes and volumeMounts.
+#  EVENTGATEWAY_KAFKA_PROXY_TLS_CLIENT_KEY_FILE: "/etc/certs/key"                                      # Please configure secret, volumes and volumeMounts.
+#  EVENTGATEWAY_KAFKA_PROXY_TLS_CA_CHAIN_CERT_FILE: "/etc/certs/ca"                                    # Please configure secret, volumes and volumeMounts.
+
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  annotations: {}
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

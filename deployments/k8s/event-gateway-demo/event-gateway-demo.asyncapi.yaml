@@ -6,7 +6,7 @@ info:
 defaultContentType: application/json
 servers:
   asyncapi-event-gateway-demo:
-    url: 'event-gateway-demo.asyncapi.org:28002'
+    url: 'event-gateway-demo.asyncapi.org:20472'
     protocol: kafka
     description: AsyncAPI [Event-Gateway](https://github.com/asyncapi/event-gateway) demo Kafka proxy. Expected messages are based on a small portion of the [StreetLights tutorial](https://bit.ly/asyncapi).
   asyncapi-event-gateway-demo-validation:
@@ -17,7 +17,6 @@ servers:
     url: 'asyncapi-kafka-test-asyncapi-8f90.aivencloud.com:20472' # Kafka with 3 brokers.
     protocol: kafka-secure
     description: AsyncAPI Kafka test broker. Private.
-    x-eventgateway-dial-mapping: '0.0.0.0:20473,event-gateway-demo.asyncapi.org:20473|0.0.0.0:20474,event-gateway-demo.asyncapi.org:20474|0.0.0.0:20475,event-gateway-demo.asyncapi.org:20475' # Dynamic ports starts at 20473
 channels:
   event-gateway-demo:
     description: Demo Kafka topic for asyncapi-event-gateway-demo server. Users can send their events to this topic and see how message validation happens on the fly based on this right AsyncAPI file by connecting to `event-gateway-demo-validation-events` channel (`asyncapi-event-gateway-demo-validation` ws server).
