@@ -19,6 +19,9 @@ var localHostIpv4 = regexp.MustCompile(`127\.0\.0\.\d+`)
 
 // ProxyConfig holds the configuration for the Kafka Proxy.
 type ProxyConfig struct {
+	// Address for this proxy. Should be reachable by your clients. Most probably a domain name.
+	// If not set, 0.0.0.0 will be used.
+	Address            string
 	BrokersMapping     []string
 	DialAddressMapping []string
 	ExtraConfig        []string
@@ -70,7 +73,7 @@ func (c *TLSConfig) Config() (*tls.Config, error) {
 // ProxyOption represents a functional configuration for the Proxy.
 type ProxyOption func(*ProxyConfig) error
 
-// WithMessageHandler ...
+// WithMessageHandler configures a handler that will handle all incoming messages.
 func WithMessageHandler(handler watermillmessage.HandlerFunc) ProxyOption {
 	return func(c *ProxyConfig) error {
 		c.MessageHandler = handler

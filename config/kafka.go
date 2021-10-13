@@ -17,6 +17,7 @@ import (
 
 // KafkaProxy holds the config for later configuring a Kafka proxy.
 type KafkaProxy struct {
+	Address           string            `desc:"Address for this proxy. Should be reachable by your clients. Most probably a domain."`
 	BrokerFromServer  string            `split_words:"true" desc:"When configuring from an AsyncAPI doc, this allows the user to only configure one server instead of all"`
 	MessageValidation MessageValidation `split_words:"true"`
 	TLS               *kafka.TLSConfig
@@ -76,7 +77,9 @@ func (c *KafkaProxy) ProxyConfig(d []byte, debug bool) (*kafka.ProxyConfig, erro
 	if err != nil {
 		return nil, err
 	}
+
 	conf.TLS = c.TLS
+	conf.Address = c.Address
 
 	return conf, nil
 }
