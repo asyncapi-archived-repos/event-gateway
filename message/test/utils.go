@@ -51,7 +51,7 @@ func ReliablePublisher(t *testing.T, topic string, messagesToAssert int, timeout
 			select {
 			case <-msgs:
 				messagesReceived++
-				if messagesReceived == messagesToAssert {
+				if messagesReceived >= messagesToAssert {
 					return
 				}
 			case <-timer.C:
@@ -84,7 +84,7 @@ func AssertCalledHandlerFunc(t *testing.T, h watermillmessage.HandlerFunc, times
 				t.Errorf("Handler was expected to be called at least %v, but only %v times were called within %s", times, atomic.LoadUint32(&calledTimes), timeout)
 				return
 			default:
-				if atomic.LoadUint32(&calledTimes) == times {
+				if atomic.LoadUint32(&calledTimes) >= times {
 					return
 				}
 			}
