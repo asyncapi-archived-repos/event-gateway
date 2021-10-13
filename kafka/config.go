@@ -162,7 +162,7 @@ func (c *ProxyConfig) Validate() error {
 	if c.MessageHandler == nil {
 		logrus.Warn("There is no message handler configured")
 		return nil
-	} else if c.MessagePublisher != nil && c.PublishToTopic == "" || c.MessagePublisher == nil && c.PublishToTopic != "" {
+	} else if (c.MessagePublisher != nil && c.PublishToTopic == "") || (c.MessagePublisher == nil && c.PublishToTopic != "") {
 		return fmt.Errorf("MessagePublisher and PublishToTopic should be set together")
 	}
 
