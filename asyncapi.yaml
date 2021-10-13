@@ -32,37 +32,16 @@ channels:
       - asyncapi-event-gateway-demo-validation
     subscribe:
       message:
-        $ref: '#/components/messages/ValidationError'
+        $ref: '#/components/messages/invalidMessage'
   event-gateway-demo-validation:
     description: Validation errors are published to and consumed from it. AsyncAPI Event-gateway is the only user of this channel. It can be consumed and exposed via `event-gateway-demo-validation-events` channel (`asyncapi-event-gateway-demo-validation` ws server).
     x-servers: # Based on https://github.com/asyncapi/spec/pull/531
       - asyncapi-kafka-test
     subscribe:
       message:
-        $ref: '#/components/messages/ValidationError'
+        $ref: '#/components/messages/invalidMessage'
 components:
   messages:
-    ValidationError:
-      payload:
-        type: object
-        properties:
-          ts:
-            type: string
-            description: RFC-3339 date-time. Date and time when the message was validated.
-          errors:
-            type: array
-            description: Array of string. Validation errors.
-          msg:
-            $ref: '#/components/schemas/Message'
-      examples:
-        - payload:
-            ts: '2021-09-10T12:04:18:475203609Z'
-            errors: [ 'lumens: Invalid type. Expected: integer, given: string' ]
-            msg:
-              context:
-                channel: 'event-gateway-demo'
-              key: 'YXN5bmNhcGktd2FzLWhlcmU='
-              value: 'eyJsdW1lbnMiOiAid2hhdGV2ZXIifQ=='
     # lightMeasured is copied from the Streetlights tutorial instead of using references due to a bug in parser-go: https://github.com/asyncapi/parser-go/issues/82
     lightMeasured:
       name: lightMeasured
@@ -73,24 +52,47 @@ components:
         - $ref: '#/components/messageTraits/commonHeaders'
       payload:
         $ref: "#/components/schemas/lightMeasuredPayload"
+    invalidMessage:
+      title: Invalid message
+      summary: Message with a Validation Error.
+      contentType: application/json
+      payload:
+        $ref: "#/components/schemas/sentMessage"
+      headers:
+        type: object
+        properties:
+          _asyncapi_eg_channel:
+            type: string
+            description: AsyncAPI Channel where the message was published to.
+          _asyncapi_eg_validation_error:
+            $ref: '#/components/schemas/validationError'
   schemas:
-    Message:
+    sentMessage:
       type: object
       properties:
-        key:
+        UUID:
           type: string
-          description: Kafka message key (base64).
-        value:
+          description: Unique identifier of message. I.e. Kafka message key.
+        Payload:
           type: string
-          description: Kafka message value (base64).
-        context:
-          $ref: '#/components/schemas/MessageContext'
-    MessageContext:
+          description: Message value. I.e. Kafka message (base64).
+      examples:
+        - UUID: 'YXN5bmNhcGktd2FzLWhlcmU='
+          Payload: 'eyJsdW1lbnMiOiAid2hhdGV2ZXIifQ=='
+    validationError:
       type: object
       properties:
-        channel:
+        ts:
           type: string
-          description: Name of the channel the message was published to.
+          description: RFC-3339 date-time. Date and time when the message was validated.
+        errors:
+          type: array
+          description: Array of string. Validation errors.
+          items:
+            type: string
+      examples:
+        - ts: '2021-09-10T12:04:18:475203609Z'
+          errors: [ 'lumens: Invalid type. Expected: integer, given: string' ]
     lightMeasuredPayload:
       type: object
       properties:

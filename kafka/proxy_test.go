@@ -5,12 +5,11 @@ import (
 	"context"
 	"encoding/binary"
 	"hash/crc32"
-	"sync/atomic"
 	"testing"
 	"time"
 
 	watermillmessage "github.com/ThreeDotsLabs/watermill/message"
-	"github.com/asyncapi/event-gateway/message"
+	messagetest "github.com/asyncapi/event-gateway/message/test"
 	"github.com/asyncapi/event-gateway/proxy"
 	kafkaproxy "github.com/grepplabs/kafka-proxy/proxy"
 	kafkaprotocol "github.com/grepplabs/kafka-proxy/proxy/protocol"
@@ -45,7 +44,15 @@ func TestNewKafka(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			p, err := NewProxy(test.c)
+			r := messagetest.NewRouter(t)
+			p, err := NewProxy(test.c, r)
+
+			go func() {
+				require.NoError(t, r.Run(context.Background()))
+			}()
+
+			<-r.Running() // Do not start test until the router is fully up and running.
+
 			if test.expectedErr != nil {
 				assert.EqualError(t, err, test.expectedErr.Error())
 				assert.Nil(t, p)
@@ -67,13 +74,22 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 		extraCheck        func(t *testing.T, handlerCalledTimes int)
 		expectedLoggedErr string
 		sleepBeforeCheck  time.Duration
-		handler           watermillmessage.HandlerFunc
+		handler           func(t *testing.T) (watermillmessage.HandlerFunc, chan struct{})
+		publisher         func(t *testing.T, topic string) (watermillmessage.Publisher, chan struct{})
+		publishToTopic    string
 	}{
 		{
-			name:        "Handler success",
+			name:        "Handler success. No publisher is set.",
 			request:     generateProduceRequestV8("valid message"),
 			shouldReply: true,
-			handler:     noopHandler,
+		},
+		{
+			name:        "Handler success. Publisher is set.",
+			request:     generateProduceRequestV8("valid message"),
+			shouldReply: true,
+			publisher: func(t *testing.T, topic string) (watermillmessage.Publisher, chan struct{}) {
+				return messagetest.ReliablePublisher(t, topic, 1, time.Second*2) // at least 1 message during max 2 seconds
+			},
 		},
 		{
 			name:              "Handler error means Nack. Message is resent infinitely.",
@@ -83,8 +99,11 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 			extraCheck: func(t *testing.T, handlerCalls int) {
 				assert.Greater(t, handlerCalls, 1)
 			},
-			handler: func(msg *watermillmessage.Message) ([]*watermillmessage.Message, error) {
-				return nil, errors.New("message is invalid, meaning Nack will be sent and message will be resent infinitely") // This will send a Nack, meaning message will be resent.
+			handler: func(t *testing.T) (watermillmessage.HandlerFunc, chan struct{}) {
+				h := func(msg *watermillmessage.Message) ([]*watermillmessage.Message, error) {
+					return nil, errors.New("message is invalid, meaning Nack will be sent and message will be resent infinitely") // This will send a Nack, meaning message will be resent.
+				}
+				return messagetest.AssertCalledHandlerFunc(t, h, 5, 100*time.Millisecond) // at least 5 calls during max 100 millis
 			},
 			sleepBeforeCheck: time.Millisecond, // letting the handlers be called several times due to Nack produced by returning an error.
 		},
@@ -94,38 +113,52 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 			apiKey:            int16(42),
 			shouldReply:       true,
 			shouldSkipRequest: true,
+			handler: func(_ *testing.T) (watermillmessage.HandlerFunc, chan struct{}) {
+				return func(msg *watermillmessage.Message) ([]*watermillmessage.Message, error) {
+					return nil, errors.New("this handler should never be called")
+				}, nil
+			},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			log := logrustest.NewGlobal()
 
-			r, err := watermillmessage.NewRouter(watermillmessage.RouterConfig{}, message.NewWatermillLogrusLogger(logrus.StandardLogger()))
-			require.NoError(t, err)
+			handler := noopHandler
+			if test.handler != nil {
+				h, done := test.handler(t)
 
-			var handlerCalls uint32
-			// Wrapping handler so we can add a spy.
-			handler := func(msg *watermillmessage.Message) ([]*watermillmessage.Message, error) {
-				atomic.AddUint32(&handlerCalls, 1)
-				if test.handler != nil {
-					return test.handler(msg)
-				}
-
-				return noopHandler(msg)
+				handler = h
+				defer func() {
+					if done != nil {
+						<-done // wait until handler has been called n times
+					}
+				}()
 			}
-			h := NewProduceRequestHandler(r, handler)
+
+			var pub watermillmessage.Publisher
+			if test.publisher != nil {
+				p, done := test.publisher(t, t.Name())
+				t.Cleanup(func() {
+					assert.NoError(t, pub.Close())
+				})
+
+				pub = p
+				defer func() {
+					if done != nil {
+						<-done // wait until publisher has published all messages
+					}
+				}()
+			}
+
+			r := messagetest.NewRouterWithLogs(t, logrus.StandardLogger())
+			h := NewProduceRequestHandler(r, handler, pub, t.Name())
 
 			go func() {
-				// Running the router
 				require.NoError(t, r.Run(context.Background()))
 			}()
-			t.Cleanup(func() {
-				// Closing the router
-				require.NoError(t, r.Close())
-			})
 
-			// Do not start test until the router is fully up and running.
-			<-r.Running()
+			<-r.Running() // Do not start test until the router is fully up and running.
 
 			kv := &kafkaprotocol.RequestKeyVersion{
 				ApiVersion: 8,                            // All test data was grabbed from a Produce Request version 8.
@@ -147,12 +180,9 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 				time.Sleep(test.sleepBeforeCheck)
 			}
 
-			if test.extraCheck != nil {
-				test.extraCheck(t, int(atomic.LoadUint32(&handlerCalls)))
-			}
-
 			if test.expectedLoggedErr != "" {
 				entry := log.LastEntry()
+				require.NotNil(t, entry)
 				require.Contains(t, entry.Data, logrus.ErrorKey)
 				assert.EqualError(t, entry.Data[logrus.ErrorKey].(error), test.expectedLoggedErr)
 			} else {
