@@ -57,7 +57,7 @@ components:
       summary: Message with a Validation Error.
       contentType: application/json
       payload:
-        $ref: "#/components/schemas/message"
+        $ref: "#/components/schemas/sentMessage"
       headers:
         type: object
         properties:
@@ -65,9 +65,9 @@ components:
             type: string
             description: AsyncAPI Channel where the message was published to.
           _asyncapi_eg_validation_error:
-            $ref: '#/components/schemas/ValidationError'
+            $ref: '#/components/schemas/validationError'
   schemas:
-    message:
+    sentMessage:
       type: object
       properties:
         UUID:
@@ -79,7 +79,7 @@ components:
       examples:
         - UUID: 'YXN5bmNhcGktd2FzLWhlcmU='
           Payload: 'eyJsdW1lbnMiOiAid2hhdGV2ZXIifQ=='
-    ValidationError:
+    validationError:
       type: object
       properties:
         ts:
