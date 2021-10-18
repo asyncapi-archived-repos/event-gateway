@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"strings"
 
 	"github.com/Shopify/sarama"
@@ -30,6 +31,8 @@ const (
 	messagesChannelName = "kafka-produced-messages"
 )
 
+const defaultLocalAddress = "0.0.0.0"
+
 var defaultMarshaler = watermillkafka.DefaultMarshaler{}
 
 // NewProxy creates a new Kafka Proxy based on a given configuration.
@@ -42,18 +45,34 @@ func NewProxy(c *ProxyConfig, r *watermillmessage.Router) (proxy.Proxy, error) {
 		return nil, err
 	}
 
-	// Yeah, not a good practice at all but I guess it's fine for now.
 	kafkaproxy.ActualDefaultRequestHandler.RequestKeyHandlers.Set(RequestAPIKeyProduce, NewProduceRequestHandler(r, c.MessageHandler, c.MessagePublisher, c.PublishToTopic))
 
-	// Setting some defaults.
-	_ = server.Server.Flags().Set("default-listener-ip", "0.0.0.0") // Binding to all local network interfaces. Needed for external calls.
+	// Binding to all local network interfaces instead of 127.0.0.1. Sometimes needed for external calls such as health checks.
+	_ = server.Server.Flags().Set("default-listener-ip", defaultLocalAddress)
 
-	if c.BrokersMapping == nil {
-		return nil, errors.New("Brokers mapping is required")
+	reachableAddress := c.Address
+	if reachableAddress == "" {
+		reachableAddress = defaultLocalAddress
 	}
 
-	if c.Debug {
-		_ = server.Server.Flags().Set("log-level", "debug")
+	for _, v := range c.BrokersMapping {
+		values := strings.Split(v, ",")
+		if len(values) == 2 && reachableAddress != defaultLocalAddress {
+			// If there is no advertisedAddress set in the mapping (there is no third value) but an address has been set for the proxy,
+			// then advertise brokers using that given proxy address so Kafka clients can reach the brokers through the proxy.
+			_, localBindingPort, _ := net.SplitHostPort(values[1])
+			v += fmt.Sprintf(",%s:%s", reachableAddress, localBindingPort)
+		}
+
+		_ = server.Server.Flags().Set("bootstrap-server-mapping", v)
+	}
+
+	// As previously done for bootstrap brokers, all dynamic listeners created when brokers are discovered
+	// will be advertised to Kafka clients using the configured address or a default.
+	_ = server.Server.Flags().Set("dynamic-advertised-listener", reachableAddress)
+
+	for _, v := range c.DialAddressMapping {
+		_ = server.Server.Flags().Set("dial-address-mapping", v)
 	}
 
 	if c.TLS != nil && c.TLS.Enable {
@@ -64,17 +83,14 @@ func NewProxy(c *ProxyConfig, r *watermillmessage.Router) (proxy.Proxy, error) {
 		_ = server.Server.Flags().Set("tls-ca-chain-cert-file", c.TLS.CAChainCertFile)
 	}
 
+	if c.Debug {
+		_ = server.Server.Flags().Set("log-level", "debug")
+	}
+
+	// Some config can be overridden here. It is intentional.
 	for _, v := range c.ExtraConfig {
 		f := strings.Split(v, "=")
 		_ = server.Server.Flags().Set(f[0], f[1])
-	}
-
-	for _, v := range c.BrokersMapping {
-		_ = server.Server.Flags().Set("bootstrap-server-mapping", v)
-	}
-
-	for _, v := range c.DialAddressMapping {
-		_ = server.Server.Flags().Set("dial-address-mapping", v)
 	}
 
 	return func(ctx context.Context) error {
