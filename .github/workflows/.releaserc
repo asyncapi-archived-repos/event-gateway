@@ -15,5 +15,5 @@ plugins:
         - path: ../bin/out/bin/asyncapi-event-gateway.windows.amd64.exe
           label: Binary - Windows AMD64
   - - "@semantic-release-plus/docker"
-      - name: asyncapi/event-gateway
-        publishChannelTag: true
+    - name: asyncapi/event-gateway
+      publishChannelTag: true
