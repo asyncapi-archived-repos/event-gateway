@@ -1,0 +1,34 @@
+name: Use Case
+description: Describe and submit your use case for
+title: "[UseCase]: "
+labels: ["documentation"]
+reviewers:
+  - 
+body:
+  - type: markdown
+    attributes:
+      value: | 
+        Thanks for taking the time to offer a use case!
+  - type: textarea
+    label: Our goals with this project are...
+    placeholder: 
+      value: Add you goal(s) in this text area.
+  - type: textarea
+    label: We expect to...
+    placeholder:
+      value: Add any and all expectations in this text area.
+  - type: textarea
+    label: We found the following challenges or difficulties...
+    placeholder:
+      value: Provide as much detail as you can.
+  - type: checkboxes
+    id: severity
+    attributes:
+      label: Overall, we think this challenge/difficulty is...
+      options:
+        - label: A 'nice to have'.
+        - label: A muct for us and decisive on using the Event Gateway.
+    - type: textarea
+      label: Is there anything else you wish to share with us?
+          
+
