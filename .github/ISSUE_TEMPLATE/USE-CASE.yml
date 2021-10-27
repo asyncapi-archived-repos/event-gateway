@@ -1,28 +1,21 @@
 name: Use Case
 description: Describe and submit your use case for
 title: "[UseCase]: "
-labels: ["documentation"]
+labels: ["use-case"]
 assignees: smoya
 body:
   - type: markdown
     attributes:
-      value: | 
-        Thanks for taking the time to offer a use case!
+      value: Share your use case(s) you expect to be considered during the development of the AsyncAPI Event Gateway.
   - type: textarea
     attributes:
-      label: List or reviewers separated by commas.
+      label: Please provide the name of your company and/or project.
     validations:
       required: true
   - type: textarea
     attributes:
-      label: Our goals with this project are...
-      description: Add you goal(s) in this text area.
-    validations:
-      required: true
-  - type: textarea
-    attributes:
-      label: We expect to...
-      description: Add any and all expectations in this text area.
+      label: Please describe your project.
+      description: Include details like what the project does, goals, etc.
     validations:
       required: true
   - type: textarea
