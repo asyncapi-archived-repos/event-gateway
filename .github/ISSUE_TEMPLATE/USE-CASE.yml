@@ -9,22 +9,26 @@ body:
       value: | 
         Thanks for taking the time to offer a use case!
   - type: textarea
-    label: List or reviewers separated by commas.
+    attributes:
+      label: List or reviewers separated by commas.
     validations:
       required: true
   - type: textarea
-    label: Our goals with this project are...
-    description: Add you goal(s) in this text area.
+    attributes:
+      label: Our goals with this project are...
+      description: Add you goal(s) in this text area.
     validations:
       required: true
   - type: textarea
-    label: We expect to...
-    description: Add any and all expectations in this text area.
+    attributes:
+      label: We expect to...
+      description: Add any and all expectations in this text area.
     validations:
       required: true
   - type: textarea
-    label: We found the following challenges or difficulties...
-    description: Provide as much detail as you can.
+    attributes:
+      label: We found the following challenges or difficulties...
+      description: Provide as much detail as you can.
     validations:
       required: true
   - type: checkboxes
@@ -35,9 +39,10 @@ body:
       options:
         - label: A 'nice to have'.
         - label: A muct for us and decisive on using the Event Gateway.
-      validations:
+    validations:
         required: true
   - type: textarea
-    label: Is there anything else you wish to share with us?
+    attributes:
+      label: Is there anything else you wish to share with us?
 
 
