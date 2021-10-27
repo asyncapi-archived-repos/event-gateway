@@ -8,11 +8,11 @@ plugins:
     - preset: conventionalcommits
   - - "@semantic-release/github"
     - assets:
-        - path: ../bin/out/bin/asyncapi-event-gateway.darwin.amd64
+        - path: ../bin/out/asyncapi-event-gateway.darwin.amd64
           label: Binary - Darwin AMD64
-        - path: ../bin/out/bin/asyncapi-event-gateway.linux.amd64
+        - path: ../bin/out/asyncapi-event-gateway.linux.amd64
           label: Binary - Linux AMD64
-        - path: ../bin/out/bin/asyncapi-event-gateway.windows.amd64.exe
+        - path: ../bin/out/asyncapi-event-gateway.windows.amd64.exe
           label: Binary - Windows AMD64
   - - "@semantic-release-plus/docker"
     - name: asyncapi/event-gateway
