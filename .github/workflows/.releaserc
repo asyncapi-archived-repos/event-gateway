@@ -1,0 +1,19 @@
+---
+branches:
+  - master
+plugins:
+  - - "@semantic-release/commit-analyzer"
+    - preset: conventionalcommits
+  - - "@semantic-release/release-notes-generator"
+    - preset: conventionalcommits
+  - - "@semantic-release/github"
+    - assets:
+        - path: ../bin/out/bin/asyncapi-event-gateway.darwin.amd64
+          label: Binary - Darwin AMD64
+        - path: ../bin/out/bin/asyncapi-event-gateway.linux.amd64
+          label: Binary - Linux AMD64
+        - path: ../bin/out/bin/asyncapi-event-gateway.windows.amd64.exe
+          label: Binary - Windows AMD64
+  - - "@semantic-release-plus/docker"
+      - name: asyncapi/event-gateway
+        publishChannelTag: true
