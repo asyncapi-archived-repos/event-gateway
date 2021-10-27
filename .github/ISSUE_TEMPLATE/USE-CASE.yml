@@ -31,7 +31,7 @@ body:
     id: severity
     attributes:
       label: Overall, we think this challenge/difficulty is...
-      description: 
+      description: Choose one of these severity 
       options:
         - label: A 'nice to have'.
         - label: A muct for us and decisive on using the Event Gateway.
