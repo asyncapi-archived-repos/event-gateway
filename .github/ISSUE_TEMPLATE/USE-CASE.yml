@@ -27,11 +27,11 @@ body:
   - type: checkboxes
     id: severity
     attributes:
-      label: Overall, we think this challenge/difficulty is...
+      label: Overall, we think Event-Gateway solving this is...
       description: Please choose only one. 
       options:
         - label: A 'nice to have'.
-        - label: A muct for us and decisive on using the Event Gateway.
+        - label: A must for us and decisive on using the Event Gateway.
     validations:
         required: true
   - type: textarea
