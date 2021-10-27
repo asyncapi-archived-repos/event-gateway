@@ -2,29 +2,29 @@ name: Use Case
 description: Describe and submit your use case for
 title: "[UseCase]: "
 labels: ["documentation"]
-reviewers:
-  - 
+assignees: smoya
 body:
   - type: markdown
     attributes:
       value: | 
         Thanks for taking the time to offer a use case!
   - type: textarea
+    label: List or reviewers separated by commas.
+    validations:
+      required: true
+  - type: textarea
     label: Our goals with this project are...
-    placeholder: 
-      value: Add you goal(s) in this text area.
+    description: Add you goal(s) in this text area.
     validations:
       required: true
   - type: textarea
     label: We expect to...
-    placeholder:
-      value: Add any and all expectations in this text area.
+    description: Add any and all expectations in this text area.
     validations:
       required: true
   - type: textarea
     label: We found the following challenges or difficulties...
-    placeholder:
-      value: Provide as much detail as you can.
+    description: Provide as much detail as you can.
     validations:
       required: true
   - type: checkboxes
