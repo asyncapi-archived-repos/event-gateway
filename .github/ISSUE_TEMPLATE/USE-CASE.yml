@@ -31,13 +31,13 @@ body:
     id: severity
     attributes:
       label: Overall, we think this challenge/difficulty is...
-      description: Choose one of these severity 
+      description: Please choose only one. 
       options:
         - label: A 'nice to have'.
         - label: A muct for us and decisive on using the Event Gateway.
       validations:
         required: true
-    - type: textarea
-      label: Is there anything else you wish to share with us?
+  - type: textarea
+    label: Is there anything else you wish to share with us?
 
 
