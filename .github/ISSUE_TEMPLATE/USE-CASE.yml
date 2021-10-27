@@ -13,22 +13,31 @@ body:
     label: Our goals with this project are...
     placeholder: 
       value: Add you goal(s) in this text area.
+    validations:
+      required: true
   - type: textarea
     label: We expect to...
     placeholder:
       value: Add any and all expectations in this text area.
+    validations:
+      required: true
   - type: textarea
     label: We found the following challenges or difficulties...
     placeholder:
       value: Provide as much detail as you can.
+    validations:
+      required: true
   - type: checkboxes
     id: severity
     attributes:
       label: Overall, we think this challenge/difficulty is...
+      description: 
       options:
         - label: A 'nice to have'.
         - label: A muct for us and decisive on using the Event Gateway.
+      validations:
+        required: true
     - type: textarea
       label: Is there anything else you wish to share with us?
-          
+
 
