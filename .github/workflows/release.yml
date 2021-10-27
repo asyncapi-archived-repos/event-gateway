@@ -48,8 +48,8 @@ jobs:
         with:
           node-version: 14
       - run: docker build --tag asyncapi/event-gateway .
-      - name: Add plugin for conventional commits
-        run: npm install conventional-changelog-conventionalcommits
+      - name: Add plugin for conventional commits and docker image push
+        run: npm install conventional-changelog-conventionalcommits @semantic-release-plus/docker
         working-directory: ./.github/workflows
       - name: Release to GitHub
         working-directory: ./.github/workflows
