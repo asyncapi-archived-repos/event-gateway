@@ -122,7 +122,7 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			log := logrustest.NewGlobal()
+			log, hook := logrustest.NewNullLogger()
 
 			handler := noopHandler
 			if test.handler != nil {
@@ -151,7 +151,7 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 				}()
 			}
 
-			r := messagetest.NewRouterWithLogs(t, logrus.StandardLogger())
+			r := messagetest.NewRouterWithLogs(t, log)
 			h := NewProduceRequestHandler(r, handler, pub, t.Name())
 
 			go func() {
@@ -181,12 +181,12 @@ func TestProduceRequestHandler_Handle(t *testing.T) {
 			}
 
 			if test.expectedLoggedErr != "" {
-				entry := log.LastEntry()
+				entry := hook.LastEntry()
 				require.NotNil(t, entry)
 				require.Contains(t, entry.Data, logrus.ErrorKey)
 				assert.EqualError(t, entry.Data[logrus.ErrorKey].(error), test.expectedLoggedErr)
 			} else {
-				for _, l := range log.AllEntries() {
+				for _, l := range hook.AllEntries() {
 					assert.NotEqualf(t, l.Level, logrus.ErrorLevel, "%q logged error unexpected", l.Message) // We don't have a notification mechanism for errors yet
 				}
 			}
