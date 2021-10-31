@@ -1,6 +1,6 @@
 <h5 align="center">
   <br>
-  <a href="https://github.com/asyncapi/event-gateway/issues/new?assignees=&labels=use+case&template=use_case.md&title=%5BUSECASE%5D+">
+  <a href="https://github.com/asyncapi/event-gateway/issues/new?assignees=smoya&labels=use-case&template=USE-CASE.yml&title=%5BUseCase%5D%3A+">
     <img src="https://dummyimage.com/1000x80/0e9f6f/ffffff.png&text=We+are+looking+for+use+cases!+Please+share+yours+by+clicking+here" alt="Share your use case with us">
   </a>
   <br>
