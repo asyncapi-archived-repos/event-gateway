@@ -68,6 +68,7 @@ func main() {
 	}
 
 	runWebsocketServer(c.WSServerPort, "/ws", m)
+	runHealthCheckServer(80, "/")
 
 	group, ctx := errgroup.WithContext(ctx)
 	group.Go(func() error {
@@ -80,6 +81,21 @@ func main() {
 	if err := group.Wait(); err != nil {
 		logrus.WithError(err).Fatal()
 	}
+}
+
+func runHealthCheckServer(port int, path string) {
+	r := chi.NewRouter()
+	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	go func() {
+		address := fmt.Sprintf(":%v", port)
+		logrus.Infof("Healthcheck server listening on %s", address)
+		if err := http.ListenAndServe(address, r); err != nil {
+			logrus.WithError(err).Fatal("error running healthcheck server")
+		}
+	}()
 }
 
 func runWebsocketServer(port int, path string, m *melody.Melody) {

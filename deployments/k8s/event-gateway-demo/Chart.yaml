@@ -1,0 +1,11 @@
+apiVersion: v2
+name: event-gateway-demo
+description: Helm chart that installs a demo of the AsyncAPI Event-Gateway.
+type: application
+version: 0.1.0
+appVersion: "0.1.0-alpha"
+dependencies:
+  - name: asyncapi-event-gateway
+    version: 0.1.0
+    repository: "file://../asyncapi-event-gateway"
+

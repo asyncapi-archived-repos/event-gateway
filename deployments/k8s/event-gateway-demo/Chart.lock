@@ -1,0 +1,6 @@
+dependencies:
+- name: asyncapi-event-gateway
+  repository: file://../asyncapi-event-gateway
+  version: 0.1.0
+digest: sha256:e904b73c842bb68b305ba756c918d93c29ec13ce46e3166886efb61899a3cd59
+generated: "2021-10-25T18:47:07.623411+02:00"

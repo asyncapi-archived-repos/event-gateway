@@ -1,0 +1,8 @@
+{{- if .Values.asyncapiFileContent }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "asyncapi-event-gateway.fullname" . }}
+data:
+  asyncapi.yaml: {{ .Values.asyncapiFileContent | quote }}
+{{- end }}

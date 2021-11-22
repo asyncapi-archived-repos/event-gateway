@@ -1,0 +1,98 @@
+{{ $fileIsURL := (not (empty (.Values.env.EVENTGATEWAY_ASYNC_API_DOC | urlParse).host )) }}
+{{- if empty .Values.asyncapiFileContent }}
+  {{- if not $fileIsURL }}
+    {{ fail "Please either set the AsyncAPI file content via --set-file asyncapi-event-gateway.asyncapiFileContent=<filename> or a valid URL via --set asyncapi-event-gateway.env.EVENTGATEWAY_ASYNC_API_DOC=<url>" }}
+  {{- end }}
+{{- end }}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "asyncapi-event-gateway.fullname" . }}
+  labels:
+    {{- include "asyncapi-event-gateway.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "asyncapi-event-gateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "asyncapi-event-gateway.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+      {{- if not $fileIsURL }}
+        - name: asyncapi-file-volume
+          configMap:
+            name: {{ include "asyncapi-event-gateway.fullname" . }}
+      {{- end }}
+      {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          volumeMounts:
+          {{- if not $fileIsURL }}
+            - name: asyncapi-file-volume
+              mountPath: {{ .Values.asyncapiFileMountPath }}
+              subPath: asyncapi.yaml
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+          {{- range $name, $value := .Values.env }}
+            - name: {{ $name | quote }}
+              value: {{ $value | quote }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.ports.healthcheck }}
+              protocol: TCP
+            - name: websocket
+              containerPort: {{ .Values.ports.websocket }}
+              protocol: TCP
+            {{- range .Values.ports.brokers }}
+            - name: "broker-{{ . }}"
+              containerPort: {{ . }}
+              protocol: TCP
+            {{ end }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
