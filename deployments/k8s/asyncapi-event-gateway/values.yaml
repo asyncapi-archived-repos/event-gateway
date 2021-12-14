@@ -4,7 +4,7 @@
 
 image:
   repository: asyncapi/event-gateway
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   tag: "latest"
 
 imagePullSecrets: []
