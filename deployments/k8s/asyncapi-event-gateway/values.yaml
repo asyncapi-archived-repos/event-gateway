@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: ghcr.io/asyncapi/event-gateway
+  repository: asyncapi/event-gateway
   pullPolicy: IfNotPresent
   tag: "latest"
 

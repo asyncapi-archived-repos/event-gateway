@@ -19,7 +19,7 @@ Helm chart that installs the AsyncAPI Event-Gateway - https://github.com/asyncap
 | env.EVENTGATEWAY_DEBUG | string | `"true"` |  |
 | fullnameOverride | string | `""` |  |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
-| image.repository | string | `"ghcr.io/asyncapi/event-gateway"` |  |
+| image.repository | string | `asyncapi/event-gateway"` |  |
 | image.tag | string | `"latest"` |  |
 | imagePullSecrets | list | `[]` |  |
 | nameOverride | string | `""` |  |
