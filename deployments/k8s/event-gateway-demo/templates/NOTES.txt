@@ -2,7 +2,7 @@
   If this is the first time you create this app, or you changed the service.type value to LoadBalancer, you should redeploy it by setting the recently created Load Balancer IP as proxy ip.
 
   Please run:
-  export LB_IP=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath={.status.loadBalancer.ingress[0].ip} service {{ include "asyncapi-event-gateway.fullname" . }})
+  export LB_IP=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath={.status.loadBalancer.ingress[0].ip} service {{ .Chart.Name }}-asyncapi-event-gateway)
 
-  Then redeploy your chart and include the following config: --set asyncapi-event-gateway.env.EVENTGATEWAY_KAFKA_PROXY_ADDRESS=$LB_IP
+  Then redeploy your chart (by using `upgrade` instead of `install`) and include the following config: --set asyncapi-event-gateway.env.EVENTGATEWAY_KAFKA_PROXY_ADDRESS=$LB_IP
 {{ end }}
