@@ -6,11 +6,11 @@ info:
 defaultContentType: application/json
 servers:
   asyncapi-event-gateway-demo:
-    url: 'event-gateway-demo.asyncapi.org:20472'
+    url: 'event-gateway-demo.asyncapi.com:20472'
     protocol: kafka
     description: AsyncAPI [Event-Gateway](https://github.com/asyncapi/event-gateway) demo Kafka proxy. Expected messages are based on a small portion of the [StreetLights tutorial](https://bit.ly/asyncapi).
   asyncapi-event-gateway-demo-validation:
-    url: 'event-gateway-demo.asyncapi.org:5000/ws'
+    url: 'event-gateway-demo.asyncapi.com:5000/ws'
     protocol: ws
     description: AsyncAPI [Event-Gateway](https://github.com/asyncapi/event-gateway) demo. Subscribe for Kafka proxy message validation errors.
   asyncapi-kafka-test:
