@@ -16,7 +16,7 @@ Helm chart that installs a demo of the AsyncAPI Event-Gateway.
 |-----|------|---------|-------------|
 | asyncapi-event-gateway.env.EVENTGATEWAY_ASYNC_API_DOC | string | `"/app/asyncapi.yaml"` | This is where the asyncapi.yaml file is mounted when `--set-file asyncapi-event-gateway.asyncapiFileContent=event-gateway-demo/event-gateway-demo.asyncapi.yaml`. |
 | asyncapi-event-gateway.env.EVENTGATEWAY_DEBUG | string | `"true"` |  |
-| asyncapi-event-gateway.env.EVENTGATEWAY_KAFKA_PROXY_ADDRESS | string | `"event-gateway-demo.asyncapi.org"` | his is the address that points to the DO load balancer in front of the Event-Gateway K8s service. |
+| asyncapi-event-gateway.env.EVENTGATEWAY_KAFKA_PROXY_ADDRESS | string | `"event-gateway-demo.asyncapi.com"` | This is the address that points to the DO load balancer in front of the Event-Gateway K8s service. |
 | asyncapi-event-gateway.env.EVENTGATEWAY_KAFKA_PROXY_BROKER_FROM_SERVER | string | `"asyncapi-kafka-test"` | Only use `asyncapi-kafka-test` declared server. |
 | asyncapi-event-gateway.env.EVENTGATEWAY_KAFKA_PROXY_EXTRA_FLAGS | string | `"dynamic-sequential-min-port=20473"` | Dynamic broker listeners will start on this port. Aiven cluster has, at least, 3 brokers (3 discovered brokers, one of those is known as the bootstrap server (20472)). |
 | asyncapi-event-gateway.env.EVENTGATEWAY_KAFKA_PROXY_MESSAGE_VALIDATION_PUBLISH_TO_KAFKA_TOPIC | string | `"event-gateway-demo-validation"` | event-gateway-demo-validation is the topic where validation errors will be published to. The app reads from it and exposes those errors through the ws server. |
