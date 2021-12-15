@@ -28,7 +28,7 @@ asyncapi-event-gateway:
     # -- Value comes from `--set asyncapi-event-gateway.secret.data.cert=$(base64 ca-file-path)`
     EVENTGATEWAY_KAFKA_PROXY_TLS_CA_CHAIN_CERT_FILE: "/etc/certs/ca"
     # -- his is the address that points to the DO load balancer in front of the Event-Gateway K8s service.
-    EVENTGATEWAY_KAFKA_PROXY_ADDRESS: "event-gateway-demo.asyncapi.org"
+    EVENTGATEWAY_KAFKA_PROXY_ADDRESS: "event-gateway-demo.asyncapi.com"
 
   # -- cert, key and ca set via `--set asyncapi-event-gateway.secret.data.{cert|key|ca}=$(base64 filepath)`
   secret:
