@@ -19,7 +19,8 @@ func ValidateMessage(validator message.Validator, failWhenInvalid bool) watermil
 	return func(msg *watermillmessage.Message) ([]*watermillmessage.Message, error) {
 		validationErr, err := validator(msg)
 		if err != nil {
-			return nil, err
+			logrus.WithError(err).Error("failed to validate message. Skipping message...")
+			return nil, nil
 		}
 
 		if validationErr != nil {
