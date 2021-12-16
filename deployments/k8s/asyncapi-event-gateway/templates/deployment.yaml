@@ -26,6 +26,9 @@ spec:
       {{- end }}
       labels:
         {{- include "asyncapi-event-gateway.selectorLabels" . | nindent 8 }}
+        {{- range $key, $value := .Values.deploymentExtraLabels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
