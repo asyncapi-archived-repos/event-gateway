@@ -70,6 +70,51 @@ However, we reduced the scope for the first versions, so we can give support to 
 
 For the first version, only [Kafka](https://kafka.apache.org) protocol will be supported. 
 
+## Demo
+A demo of the **Event Gateway** has been deployed and it is completely available to the users.
+It is a very limited demo environment, but it is a good starting point for the users to familiarize on the concept.
+
+Note that as per today, only the [Kafka](https://kafka.apache.org) protocol is supported. More info at [docs/config/kafka.md](docs/config/kafka.md).
+The AsyncAPI file used for the demo is available [here](deployments/k8s/event-gateway-demo/event-gateway-demo.asyncapi.yaml). You can also [open it with Studio](https://studio.asyncapi.com/?url=https://raw.githubusercontent.com/asyncapi/event-gateway/master/deployments/k8s/event-gateway-demo/event-gateway-demo.asyncapi.yaml).
+
+This video introduces this demo application:  
+[![Quick introduction to what AsyncAPI Event-Gateway is capable of in 2021](https://user-images.githubusercontent.com/1083296/146788873-f21fca6b-a07e-4cac-841d-0f59f48065bd.png)](https://www.youtube.com/watch?v=ht8mOf3wsFw)
+
+Main things you can do now:
+
+- **Produce** Kafka messages to the Kafka broker `event-gateway-demo.asyncapi.com:20472` and topic `event-gateway-demo`. The expected message payload (`lightMeasured`) is:
+  ```yaml
+  type: object
+  properties:
+    lumens:
+      type: integer
+      minimum: 0
+      description: Light intensity measured in lumens.
+    sentAt:
+      type: string
+      format: date-time
+      description: Date and time when the message was sent.
+  ```
+  You can use [kcat](https://github.com/edenhill/kcat) as Kafka producer (headers are totally optional):
+  ```bash
+  echo '{"lumens": 100}' | kcat -H test=true -H origin=readme -H time=(date) -b event-gateway-demo.asyncapi.com:20472 -t event-gateway-demo -P
+  ```                
+- **Consume** Kafka messages from the Kafka broker `event-gateway-demo.asyncapi.com:20472` and topic `event-gateway-demo`.
+  You can use [kcat](https://github.com/edenhill/kcat) as Kafka consumer (headers are totally optional):
+  ```bash
+  kcat -b event-gateway-demo.asyncapi.com:20472 -t event-gateway-demo -C
+  ```     
+- **Watch** for the messages via the websocket endpoint at `ws://event-gateway-demo.asyncapi.com:5000/ws`. You can use [Websocat](https://github.com/vi/websocat) to connect to the websocket:
+  ```bash
+  websocat -v ws://event-gateway-demo.asyncapi.com:5000/ws
+  ```
+  This websocket endpoint consumes from another Kafka topic where the original produced messages are forwarded. 
+  
+  In the case of producing messages with an invalid payload (payloads that don't validate against the schema above), an extra metadata field (Kafka header under the hood) named `_asyncapi_eg_validation_error` will be included in the message. For example:
+  ```json
+  "_asyncapi_eg_validation_error": "{\"ts\":\"2021-12-20T11:33:26.583143572Z\",\"errors\":[\"lumens: Invalid type. Expected: integer, given: boolean\"]}",
+  ```
+
 ## Getting Started
 
 ### Install from Docker
