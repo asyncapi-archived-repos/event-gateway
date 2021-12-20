@@ -6,6 +6,7 @@ import (
 
 	watermillmessage "github.com/ThreeDotsLabs/watermill/message"
 	"github.com/asyncapi/event-gateway/message"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,6 +18,7 @@ func TestValidateMessage(t *testing.T) {
 		failWhenInvalid       bool
 		expectedValidationErr string
 		expectedErr           error
+		messageIsInvalid      bool
 	}{
 		{
 			name: "Message is valid",
@@ -36,6 +38,11 @@ func TestValidateMessage(t *testing.T) {
 			expectedValidationErr: "testing error",
 			expectedErr:           ErrMessageIsInvalid,
 		},
+		{
+			name:             "Skip message if message is invalid",
+			validator:        erroredMessageValidator,
+			messageIsInvalid: true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -47,8 +54,12 @@ func TestValidateMessage(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			assert.Len(t, returnedMsgs, 1)
-			assert.Same(t, msg, returnedMsgs[0])
+			if test.messageIsInvalid {
+				assert.Empty(t, returnedMsgs)
+			} else {
+				assert.Len(t, returnedMsgs, 1)
+				assert.Same(t, msg, returnedMsgs[0])
+			}
 
 			validationErr, err := message.ValidationErrorFromMessage(msg)
 			require.NoError(t, err)
@@ -65,4 +76,8 @@ func invalidMessageValidator(_ *watermillmessage.Message) (*message.ValidationEr
 		Timestamp: time.Now(),
 		Errors:    []string{"testing error"},
 	}, nil
+}
+
+func erroredMessageValidator(_ *watermillmessage.Message) (*message.ValidationError, error) {
+	return nil, errors.New("random error")
 }
