@@ -95,7 +95,7 @@ Main things you can do now:
       format: date-time
       description: Date and time when the message was sent.
   ```
-  You can use [kcat](https://github.com/edenhill/kcat) as Kafka producer (headers are totally optional):
+  You can use [kcat](https://github.com/edenhill/kcat) as the Kafka producer (headers are totally optional):
   ```bash
   echo '{"lumens": 100}' | kcat -H test=true -H origin=readme -H time=(date) -b event-gateway-demo.asyncapi.com:20472 -t event-gateway-demo -P
   ```                
