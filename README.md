@@ -100,7 +100,7 @@ Main things you can do now:
   echo '{"lumens": 100}' | kcat -H test=true -H origin=readme -H time=(date) -b event-gateway-demo.asyncapi.com:20472 -t event-gateway-demo -P
   ```                
 - **Consume** Kafka messages from the Kafka broker `event-gateway-demo.asyncapi.com:20472` and topic `event-gateway-demo`.
-  You can use [kcat](https://github.com/edenhill/kcat) as Kafka consumer (headers are totally optional):
+  You can use [kcat](https://github.com/edenhill/kcat) as the Kafka consumer (headers are totally optional):
   ```bash
   kcat -b event-gateway-demo.asyncapi.com:20472 -t event-gateway-demo -C
   ```     
