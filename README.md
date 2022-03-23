@@ -1,3 +1,5 @@
+[![AsyncAPI Event Gateway](./assets/logo.png)](https://www.asyncapi.com)
+
 <h5 align="center">
   <br>
   <a href="https://github.com/asyncapi/event-gateway/issues/new?assignees=&labels=use+case&template=use_case.md&title=%5BUSECASE%5D+">
@@ -5,16 +7,6 @@
   </a>
   <br>
 </h5>
-
-<h5 align="center">
-  <br>
-  <a href="https://www.asyncapi.org"><img src="https://github.com/asyncapi/parser-nodejs/raw/master/assets/logo.png" alt="AsyncAPI logo" width="200"></a>
-  <br>
-  AsyncAPI Event Gateway
-</h5>
-<p align="center">
-  <em>The Event Gateway solution by excellence</em>
-</p>
 
 > :warning: Still under development, it didn't reach v1.0.0 and therefore is not suitable for production use yet.
 
