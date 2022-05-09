@@ -123,7 +123,7 @@ The Minimum required version of Go is set in [go.mod](go.mod) file.
 2. Run `make build`. The binary will be placed at `bin/out/event-gateway`.
 
 ### Configuration
-Please refer to [config reference](/docs/config/README.md).
+Please refer to [config reference](./docs/config/README.md).
 
 ## Contributing
 Read [CONTRIBUTING](https://github.com/asyncapi/.github/blob/master/CONTRIBUTING.md) guide.
