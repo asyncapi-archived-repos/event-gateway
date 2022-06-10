@@ -1,4 +1,4 @@
-asyncapi: '2.0.0' # Go parser does not support 2.1.0 at this moment.
+asyncapi: '2.4.0'
 info:
   title: AsyncAPI Event-Gateway demo API
   version: 1.0.0-alpha

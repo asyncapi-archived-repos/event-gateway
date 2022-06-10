@@ -6,7 +6,7 @@ require (
 	github.com/Shopify/sarama v1.29.1
 	github.com/ThreeDotsLabs/watermill v1.0.2
 	github.com/ThreeDotsLabs/watermill-kafka/v2 v2.2.1
-	github.com/asyncapi/parser-go v0.3.1-0.20210701222435-43ab3e4b47d6
+	github.com/asyncapi/parser-go v0.4.1
 	github.com/go-chi/chi/v5 v5.0.3
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/grepplabs/kafka-proxy v0.2.8
@@ -15,11 +15,11 @@ require (
 	github.com/olahol/melody v0.0.0-20180227134253-7bd65910e5ab
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/xdg/scram v1.0.3 // indirect
 	github.com/xdg/stringprep v1.0.3 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 )
 
 replace (
