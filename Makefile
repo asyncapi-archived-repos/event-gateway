@@ -13,7 +13,7 @@ WHITE  := $(shell tput -Txterm setaf 7)
 CYAN   := $(shell tput -Txterm setaf 6)
 RESET  := $(shell tput -Txterm sgr0)
 
-GOLANGCILINT_VERSION = 1.40.1
+GOLANGCILINT_VERSION = 1.46.2
 
 .PHONY: all test build vendor
 
@@ -54,4 +54,4 @@ $(TOOLS_DIR):
 	mkdir -p $(TOOLS_DIR)
 
 $(TOOLS_DIR)/golangci-lint: $(TOOLS_DIR)
-	@wget -O - -q https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | BINDIR=$(@D) sh -s v$(GOLANGCILINT_VERSION) > /dev/null 2>&1
+	@wget -O - -q https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | BINDIR=$(@D) sh -s v$(GOLANGCILINT_VERSION) > /dev/null 2>&1
