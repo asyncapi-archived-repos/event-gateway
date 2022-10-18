@@ -62,6 +62,18 @@ However, we reduced the scope for the first versions, so we can give support to 
 
 For the first version, only [Kafka](https://kafka.apache.org) protocol will be supported. 
 
+This is the flowchart representation for the current avaialble version of the **Event Gateway**:
+
+```mermaid
+graph TD
+    PR[Producer]-- Message --- EG[AsyncAPI Event-Gateway]
+    EG -- Message --- EGV{Is Message valid?}
+    EGV -->|Yes| BR[Broker]
+    EGV --- |No| INV{Fail when invalid?}
+    INV -->|Yes| ERR[/Fail/] -- Produce request errored --> PR
+    INV -->|No| BR
+```
+
 ## Demo
 A demo of the **Event Gateway** has been deployed and it is completely available to the users.
 It is a very limited demo environment, but it is a good starting point for the users to familiarize on the concept.
